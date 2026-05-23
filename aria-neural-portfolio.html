@@ -58,7 +58,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #thud.on{opacity:1;pointer-events:all;}
 .tdot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:blink 1.5s infinite;}
 #tlabel{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);}
-.tbtn{background:none;border:1px solid rgba(93,228,199,.25);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:8px 18px;cursor:none;transition:all .2s;}
+.tbtn,.pbtn,.pdot,.hud-nav button,.pcls{cursor:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+@media(max-width:768px){.tbtn,.pbtn,.pdot,.hud-nav button,.pcls{cursor:auto;}}
+.tbtn{background:none;border:1px solid rgba(93,228,199,.25);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:8px 18px;transition:all .2s;}
 .tbtn:hover{background:rgba(93,228,199,.08);border-color:var(--accent);}
 .tbtn.exit{border-color:rgba(167,139,250,.3);color:var(--accent2);}
 .tbtn.exit:hover{background:rgba(167,139,250,.08);border-color:var(--accent2);}
@@ -132,8 +134,75 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .clink:hover{border-color:rgba(93,228,199,.35);background:rgba(93,228,199,.04);color:var(--accent);}
 .clabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);min-width:64px;}
 
-/* Mute button — bottom left */
-@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+/* ── MOBILE RESPONSIVE ────────────────────────────────────────────────── */
+@media (max-width: 768px){
+  /* No custom cursor on touch */
+  html,body{cursor:auto;}
+  #cur,#cur-ring{display:none;}
+
+  /* Intro text smaller */
+  #intro-name{font-size:clamp(2.2rem,11vw,3.5rem);}
+  #intro-sub{font-size:12px;padding:0 1.5rem;}
+  #intro-tag{font-size:10px;}
+
+  /* HUD — logo only, hide nav links (use progress dots instead) */
+  #hud{padding:1rem 1.2rem;}
+  .hud-nav{display:none;}
+
+  /* Progress dots — move to bottom row on mobile */
+  #pdots{
+    right:auto;top:auto;transform:none;
+    bottom:1rem;left:50%;transform:translateX(-50%);
+    flex-direction:row;gap:12px;
+  }
+  .pdot{width:8px;height:8px;}
+
+  /* Travel HUD — stack vertically, smaller text */
+  #thud{
+    flex-direction:column;gap:8px;
+    bottom:3.5rem;
+    width:90%;left:5%;transform:none;
+    align-items:center;
+  }
+  #tlabel{font-size:10px;text-align:center;}
+  .tbtn{font-size:10px;padding:7px 14px;width:100%;text-align:center;}
+
+  /* Panels — full width, more padding room */
+  .npanel{
+    padding:1.5rem 1.2rem;
+    width:95%;
+    max-height:82vh;
+    top:50%;left:50%;
+    transform:translateX(-50%) translateY(-46%) scale(.93);
+  }
+  .npanel.on{transform:translateX(-50%) translateY(-50%) scale(1);}
+  .ptitle{font-size:1.4rem;}
+  .pbody{font-size:12px;}
+  .pactions{flex-direction:column;}
+  .pbtn{text-align:center;width:100%;}
+
+  /* Stat row — single column on very small screens */
+  .srow{grid-template-columns:repeat(3,1fr);}
+
+  /* Resume bar — stack on mobile */
+  .resume-bar{flex-direction:column;align-items:flex-start;gap:.75rem;}
+  .dl-btn{width:100%;justify-content:center;}
+
+  /* Chips wrap nicely already — just smaller font */
+  .chip{font-size:10px;padding:4px 9px;}
+
+  /* Contact links */
+  .clink{font-size:12px;}
+  .clabel{min-width:52px;}
+}
+
+@media (max-width: 420px){
+  #intro-name{font-size:2rem;}
+  .srow{grid-template-columns:1fr 1fr;}
+  .scell:last-child{grid-column:span 2;}
+}
+/* ── END MOBILE ──────────────────────────────────────────────────────── */
+
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes scanpulse{0%,100%{opacity:.3;}50%{opacity:1;}}
 @keyframes blink{0%,100%{opacity:.4;}50%{opacity:1;}}
