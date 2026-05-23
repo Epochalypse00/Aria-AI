@@ -999,6 +999,7 @@ function getOrbitPos(idx){
 // TRAVEL ENTRY POINT — called on first click or "next node"
 // ─────────────────────────────────────────────────────────────────────────────
 function startJourney(idx){
+  tryStartAudio(); // ensure audio starts on sphere click
   // Hide intro if still showing
   const introEl = document.getElementById('intro');
   introEl.style.opacity='0';
@@ -1487,9 +1488,15 @@ function startAudio(){
 // Auto-start on first user interaction (browser autoplay policy requires gesture)
 function tryStartAudio(){
   startAudio();
-  // Resume if context was suspended
   if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 }
+
+// Fire on every possible first interaction — mousemove catches people
+// who just move their cursor over the page without clicking
+['click','keydown','touchstart','mousedown','pointerdown','mousemove','focus','scroll'].forEach(ev=>
+  document.addEventListener(ev, tryStartAudio, { once: true })
+);
+
 animate();
 
 
