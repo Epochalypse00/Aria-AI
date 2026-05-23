@@ -215,6 +215,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div id="cur-ring"></div>
 <canvas id="c"></canvas>
 
+<!-- Background music -->
+<audio id="bg-music" loop preload="auto">
+  <source src="https://drive.google.com/uc?export=download&id=1Vym0eEy_gkzrlkDz-sexBM5IFxnKwjbm" type="audio/mpeg">
+</audio>
+
 <!-- Warp overlay -->
 <div id="warp"><canvas id="wc"></canvas></div>
 
@@ -1409,166 +1414,32 @@ function animate(){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AMBIENT SPACE MUSIC — Web Audio API, no external files needed
-// Generates a deep cinematic drone: layered sine pads + slow filter sweep
-// + occasional high shimmer notes, all procedurally
+// BACKGROUND MUSIC — music.mp3
 // ─────────────────────────────────────────────────────────────────────────────
-let audioCtx = null;
-let masterGain = null;
 let audioStarted = false;
+const bgMusic = document.getElementById('bg-music');
 
-function buildAmbientMusic(ctx){
-  const master = ctx.createGain();
-  master.gain.setValueAtTime(0, ctx.currentTime);
-  master.gain.linearRampToValueAtTime(0.38, ctx.currentTime + 4); // slow fade in
-  master.connect(ctx.destination);
-
-  // ── Reverb convolver (fake impulse response) ──
-  function makeReverb(dur=3.5, decay=2.2){
-    const rate = ctx.sampleRate;
-    const len  = rate * dur;
-    const buf  = ctx.createBuffer(2, len, rate);
-    for(let c=0;c<2;c++){
-      const d=buf.getChannelData(c);
-      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);
-    }
-    const conv=ctx.createConvolver(); conv.buffer=buf; return conv;
-  }
-  const reverb = makeReverb(4.5, 2.8);
-  const reverbGain = ctx.createGain(); reverbGain.gain.value = 0.55;
-  reverb.connect(reverbGain); reverbGain.connect(master);
-
-  // ── Low-pass filter that slowly sweeps for movement ──
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = 600;
-  filter.Q.value = 0.8;
-  filter.connect(master);
-  filter.connect(reverb);
-
-  // Automate filter sweep — very slow, 40s cycle
-  function sweepFilter(){
-    const now = ctx.currentTime;
-    filter.frequency.cancelScheduledValues(now);
-    filter.frequency.setValueAtTime(filter.frequency.value, now);
-    filter.frequency.linearRampToValueAtTime(1800, now + 20);
-    filter.frequency.linearRampToValueAtTime(400,  now + 40);
-    setTimeout(sweepFilter, 40000);
-  }
-  sweepFilter();
-
-  // ── Drone layer builder ──
-  // Creates a detuned oscillator pair (slight chorus) feeding into filter
-  function makeDrone(freq, gainVal, type='sine', detune=3){
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const g    = ctx.createGain();
-    osc1.type = osc2.type = type;
-    osc1.frequency.value = freq;
-    osc2.frequency.value = freq;
-    osc1.detune.value =  detune;
-    osc2.detune.value = -detune;
-    g.gain.value = gainVal;
-    osc1.connect(g); osc2.connect(g);
-    g.connect(filter);
-    osc1.start(); osc2.start();
-    return { osc1, osc2, g };
-  }
-
-  // ── Root drone chord — open fifth (Dm feel) ──
-  makeDrone(55.0,  0.18, 'sine',   2);   // D1  — sub bass
-  makeDrone(110.0, 0.14, 'sine',   3);   // D2  — bass fundamental
-  makeDrone(164.8, 0.10, 'sine',   4);   // E3  — third partial
-  makeDrone(220.0, 0.08, 'sine',   5);   // A3  — fifth
-  makeDrone(293.7, 0.06, 'sine',   6);   // D4  — octave
-  makeDrone(440.0, 0.04, 'sine',   8);   // A4  — upper fifth shimmer
-
-  // ── Slow pad — triangle wave, breathes with LFO ──
-  function makePad(freq, baseGain){
-    const osc = ctx.createOscillator();
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    const g   = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = freq;
-    osc.detune.value = (Math.random()-0.5)*12;
-    lfo.type = 'sine';
-    lfo.frequency.value = 0.08 + Math.random()*0.06;  // very slow breath 0.08–0.14 Hz
-    lfoGain.gain.value = baseGain * 0.6;
-    g.gain.value = baseGain * 0.4;
-    lfo.connect(lfoGain); lfoGain.connect(g.gain);
-    osc.connect(g); g.connect(filter);
-    osc.start(); lfo.start();
-  }
-  makePad(73.4,  0.09);   // D2
-  makePad(110.0, 0.07);
-  makePad(146.8, 0.06);   // D3
-  makePad(220.0, 0.05);
-
-  // ── High shimmer — random bell-like notes every 6–14s ──
-  const shimmerNotes = [
-    523.2, 587.3, 659.3, 783.9, 880.0,   // C5 D5 E5 G5 A5
-    1046.5, 1174.7, 1318.5               // C6 D6 E6
-  ];
-  function playShimmer(){
-    const freq = shimmerNotes[Math.floor(Math.random()*shimmerNotes.length)];
-    const osc  = ctx.createOscillator();
-    const env  = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    osc.detune.value = (Math.random()-0.5)*8;
-    env.gain.setValueAtTime(0, ctx.currentTime);
-    env.gain.linearRampToValueAtTime(0.055, ctx.currentTime + 0.08);
-    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.5);
-    osc.connect(env); env.connect(reverb); env.connect(master);
-    osc.start(); osc.stop(ctx.currentTime + 3.6);
-    const next = 6000 + Math.random()*8000;
-    setTimeout(playShimmer, next);
-  }
-  setTimeout(playShimmer, 3000);  // first shimmer after 3s
-
-  // ── Sub pulse — very slow, deep thump every ~8s ──
-  function subPulse(){
-    const osc = ctx.createOscillator();
-    const env = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = 36 + Math.random()*8;
-    env.gain.setValueAtTime(0, ctx.currentTime);
-    env.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.15);
-    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.8);
-    osc.connect(env); env.connect(master);
-    osc.start(); osc.stop(ctx.currentTime + 3);
-    setTimeout(subPulse, 7000 + Math.random()*4000);
-  }
-  setTimeout(subPulse, 5000);
-
-  return master;
-}
-
-function startAudio(){
+function tryStartAudio(){
   if(audioStarted) return;
   audioStarted = true;
-  try {
-    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = buildAmbientMusic(audioCtx);
-  } catch(e){ console.warn('Web Audio not supported', e); }
+  bgMusic.volume = 0;
+  bgMusic.play().then(()=>{
+    // Fade in volume over 3 seconds
+    let v = 0;
+    const fade = setInterval(()=>{
+      v = Math.min(0.6, v + 0.01);
+      bgMusic.volume = v;
+      if(v >= 0.6) clearInterval(fade);
+    }, 50);
+  }).catch(()=>{ audioStarted = false; }); // reset if blocked, try again next interaction
 }
 
-// Auto-start on first user interaction (browser autoplay policy requires gesture)
-function tryStartAudio(){
-  startAudio();
-  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-}
-
-// Fire on every possible first interaction — mousemove catches people
-// who just move their cursor over the page without clicking
-['click','keydown','touchstart','mousedown','pointerdown','mousemove','focus','scroll'].forEach(ev=>
+// Try on every possible interaction
+['click','keydown','touchstart','mousedown','mousemove','scroll'].forEach(ev=>
   document.addEventListener(ev, tryStartAudio, { once: true })
 );
 
 animate();
-
-
 </script>
 </body>
 </html>
