@@ -34,6 +34,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #intro-name .dim{color:rgba(232,234,240,.35);}
 #intro-name .bright{background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 #intro-sub{font-size:13px;color:var(--muted);margin-top:1.5rem;letter-spacing:.06em;opacity:0;animation:fadeUp .8s .8s forwards;text-align:center;line-height:1.9;}
+/* Fallback — if animation doesn't fire, force visible after 2s */
+#intro-tag{animation:fadeUp .8s .3s forwards, forceShow 0s 2.5s forwards;}
+#intro-name{animation:fadeUp .8s .55s forwards, forceShow 0s 2.5s forwards;}
+#intro-sub{animation:fadeUp .8s .8s forwards, forceShow 0s 2.5s forwards;}
 #intro-hint{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;animation:fadeIn 1s 1.6s forwards;pointer-events:none;transition:opacity .6s;}
 #intro-hint span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
 .hint-line{width:1px;height:48px;background:linear-gradient(to bottom,transparent,var(--accent));animation:scanpulse 2s ease-in-out infinite;}
@@ -203,6 +207,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 }
 /* ── END MOBILE ──────────────────────────────────────────────────────── */
 
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes forceShow{to{opacity:1;transform:none;}}
 @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 @keyframes scanpulse{0%,100%{opacity:.3;}50%{opacity:1;}}
 @keyframes blink{0%,100%{opacity:.4;}50%{opacity:1;}}
@@ -214,11 +220,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div id="cur"></div>
 <div id="cur-ring"></div>
 <canvas id="c"></canvas>
-
-<!-- Background music -->
-<audio id="bg-music" loop preload="auto">
-  <source src="https://drive.google.com/uc?export=download&id=1Vym0eEy_gkzrlkDz-sexBM5IFxnKwjbm" type="audio/mpeg">
-</audio>
 
 <!-- Warp overlay -->
 <div id="warp"><canvas id="wc"></canvas></div>
@@ -1414,29 +1415,111 @@ function animate(){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND MUSIC — music.mp3
+// AMBIENT SPACE MUSIC — Web Audio API procedural
 // ─────────────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+let masterGain = null;
 let audioStarted = false;
-const bgMusic = document.getElementById('bg-music');
 
-function tryStartAudio(){
-  if(audioStarted) return;
-  audioStarted = true;
-  bgMusic.volume = 0;
-  bgMusic.play().then(()=>{
-    // Fade in volume over 3 seconds
-    let v = 0;
-    const fade = setInterval(()=>{
-      v = Math.min(0.6, v + 0.01);
-      bgMusic.volume = v;
-      if(v >= 0.6) clearInterval(fade);
-    }, 50);
-  }).catch(()=>{ audioStarted = false; }); // reset if blocked, try again next interaction
+function buildAmbientMusic(ctx){
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(0.38, ctx.currentTime + 4);
+  master.connect(ctx.destination);
+
+  function makeReverb(dur=3.5, decay=2.2){
+    const rate=ctx.sampleRate, len=rate*dur;
+    const buf=ctx.createBuffer(2,len,rate);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}
+    const conv=ctx.createConvolver(); conv.buffer=buf; return conv;
+  }
+  const reverb=makeReverb(4.5,2.8);
+  const reverbGain=ctx.createGain(); reverbGain.gain.value=0.55;
+  reverb.connect(reverbGain); reverbGain.connect(master);
+
+  const filter=ctx.createBiquadFilter();
+  filter.type='lowpass'; filter.frequency.value=600; filter.Q.value=0.8;
+  filter.connect(master); filter.connect(reverb);
+
+  function sweepFilter(){
+    const now=ctx.currentTime;
+    filter.frequency.cancelScheduledValues(now);
+    filter.frequency.setValueAtTime(filter.frequency.value,now);
+    filter.frequency.linearRampToValueAtTime(1800,now+20);
+    filter.frequency.linearRampToValueAtTime(400,now+40);
+    setTimeout(sweepFilter,40000);
+  }
+  sweepFilter();
+
+  function makeDrone(freq,gainVal,type='sine',detune=3){
+    const o1=ctx.createOscillator(),o2=ctx.createOscillator(),g=ctx.createGain();
+    o1.type=o2.type=type; o1.frequency.value=o2.frequency.value=freq;
+    o1.detune.value=detune; o2.detune.value=-detune; g.gain.value=gainVal;
+    o1.connect(g); o2.connect(g); g.connect(filter);
+    o1.start(); o2.start();
+  }
+  makeDrone(55.0,0.18,'sine',2);
+  makeDrone(110.0,0.14,'sine',3);
+  makeDrone(164.8,0.10,'sine',4);
+  makeDrone(220.0,0.08,'sine',5);
+  makeDrone(293.7,0.06,'sine',6);
+  makeDrone(440.0,0.04,'sine',8);
+
+  function makePad(freq,baseGain){
+    const osc=ctx.createOscillator(),lfo=ctx.createOscillator(),lfoG=ctx.createGain(),g=ctx.createGain();
+    osc.type='triangle'; osc.frequency.value=freq; osc.detune.value=(Math.random()-.5)*12;
+    lfo.type='sine'; lfo.frequency.value=0.08+Math.random()*0.06;
+    lfoG.gain.value=baseGain*0.6; g.gain.value=baseGain*0.4;
+    lfo.connect(lfoG); lfoG.connect(g.gain); osc.connect(g); g.connect(filter);
+    osc.start(); lfo.start();
+  }
+  makePad(73.4,0.09); makePad(110.0,0.07); makePad(146.8,0.06); makePad(220.0,0.05);
+
+  const shimmerNotes=[523.2,587.3,659.3,783.9,880.0,1046.5,1174.7,1318.5];
+  function playShimmer(){
+    const freq=shimmerNotes[Math.floor(Math.random()*shimmerNotes.length)];
+    const osc=ctx.createOscillator(),env=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=freq; osc.detune.value=(Math.random()-.5)*8;
+    env.gain.setValueAtTime(0,ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.055,ctx.currentTime+0.08);
+    env.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+3.5);
+    osc.connect(env); env.connect(reverb); env.connect(master);
+    osc.start(); osc.stop(ctx.currentTime+3.6);
+    setTimeout(playShimmer,6000+Math.random()*8000);
+  }
+  setTimeout(playShimmer,3000);
+
+  function subPulse(){
+    const osc=ctx.createOscillator(),env=ctx.createGain();
+    osc.type='sine'; osc.frequency.value=36+Math.random()*8;
+    env.gain.setValueAtTime(0,ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.22,ctx.currentTime+0.15);
+    env.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+2.8);
+    osc.connect(env); env.connect(master);
+    osc.start(); osc.stop(ctx.currentTime+3);
+    setTimeout(subPulse,7000+Math.random()*4000);
+  }
+  setTimeout(subPulse,5000);
+
+  return master;
 }
 
-// Try on every possible interaction
+function startAudio(){
+  if(audioStarted) return;
+  audioStarted=true;
+  try{
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    masterGain=buildAmbientMusic(audioCtx);
+  }catch(e){console.warn('Web Audio not supported',e);}
+}
+
+function tryStartAudio(){
+  startAudio();
+  if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+}
+
 ['click','keydown','touchstart','mousedown','mousemove','scroll'].forEach(ev=>
-  document.addEventListener(ev, tryStartAudio, { once: true })
+  document.addEventListener(ev,tryStartAudio,{once:true})
 );
 
 animate();
