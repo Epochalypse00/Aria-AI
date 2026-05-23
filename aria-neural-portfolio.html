@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aria Sokhangoo — AI Engineer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#02030a;
+  --accent:#5de4c7;
+  --accent2:#a78bfa;
+  --text:#e8eaf0;
+  --muted:#6b7280;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;cursor:none;}
+#c{position:fixed;inset:0;width:100%!important;height:100%!important;z-index:0;}
+
+/* cursor */
+#cur{position:fixed;width:9px;height:9px;background:var(--accent);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:transform .12s,background .2s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1px solid rgba(93,228,199,.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:left .12s ease,top .12s ease,transform .2s,border-color .2s;}
+
+/* vignette */
+.vig{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 40%,rgba(2,3,10,.75) 100%);}
+
+/* scanline */
+.scan{position:fixed;inset:0;pointer-events:none;z-index:2;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px);opacity:.35;}
+
+/* INTRO */
+#intro{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;transition:opacity 1s;}
+#intro-tag{font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;opacity:0;animation:fadeUp .8s .3s forwards;}
+#intro-name{font-family:'Syne',sans-serif;font-size:clamp(3rem,7vw,6.5rem);font-weight:800;line-height:.95;letter-spacing:-.02em;text-align:center;opacity:0;animation:fadeUp .8s .55s forwards;}
+#intro-name .dim{color:rgba(232,234,240,.35);}
+#intro-name .bright{background:linear-gradient(120deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#intro-sub{font-size:13px;color:var(--muted);margin-top:1.5rem;letter-spacing:.06em;opacity:0;animation:fadeUp .8s .8s forwards;text-align:center;line-height:1.9;}
+#intro-hint{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0;animation:fadeIn 1s 1.6s forwards;pointer-events:none;transition:opacity .6s;}
+#intro-hint span{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);}
+.hint-line{width:1px;height:48px;background:linear-gradient(to bottom,transparent,var(--accent));animation:scanpulse 2s ease-in-out infinite;}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:40;padding:1.4rem 3rem;display:flex;justify-content:space-between;align-items:center;opacity:0;transition:opacity .7s;background:linear-gradient(to bottom,rgba(2,3,10,.9),transparent);backdrop-filter:blur(6px);}
+#hud.on{opacity:1;}
+.hud-logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);}
+.hud-nav{display:flex;gap:2rem;}
+.hud-nav button{background:none;border:none;color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:none;transition:color .2s;}
+.hud-nav button:hover{color:var(--accent);}
+
+/* progress dots */
+#pdots{position:fixed;right:2.2rem;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:14px;opacity:0;transition:opacity .5s;}
+#pdots.on{opacity:1;}
+.pdot{width:6px;height:6px;border-radius:50%;border:1px solid rgba(93,228,199,.3);cursor:none;transition:all .3s;}
+.pdot.active{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent);}
+.pdot:hover{border-color:var(--accent);}
+
+/* travel hud */
+#thud{position:fixed;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:14px;opacity:0;transition:opacity .5s;pointer-events:none;white-space:nowrap;}
+#thud.on{opacity:1;pointer-events:all;}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:blink 1.5s infinite;}
+#tlabel{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);}
+.tbtn{background:none;border:1px solid rgba(93,228,199,.25);color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;padding:8px 18px;cursor:none;transition:all .2s;}
+.tbtn:hover{background:rgba(93,228,199,.08);border-color:var(--accent);}
+.tbtn.exit{border-color:rgba(167,139,250,.3);color:var(--accent2);}
+.tbtn.exit:hover{background:rgba(167,139,250,.08);border-color:var(--accent2);}
+
+/* WARP overlay */
+#warp{position:fixed;inset:0;z-index:200;pointer-events:none;opacity:0;}
+#warp canvas{position:absolute;inset:0;width:100%;height:100%;}
+
+/* PANEL */
+#poverlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(2,3,10,0);pointer-events:none;transition:background .5s;}
+#poverlay.on{background:rgba(2,3,10,.88);pointer-events:all;backdrop-filter:blur(10px);}
+.npanel{position:absolute;background:rgba(8,10,18,.97);border:1px solid rgba(93,228,199,.13);padding:2.5rem;max-width:680px;width:90%;max-height:88vh;overflow-y:auto;opacity:0;transform:scale(.93) translateY(18px);transition:all .45s cubic-bezier(.16,1,.3,1);pointer-events:none;}
+.npanel.on{opacity:1;transform:scale(1) translateY(0);pointer-events:all;}
+.npanel::-webkit-scrollbar{width:3px;}
+.npanel::-webkit-scrollbar-thumb{background:rgba(93,228,199,.2);}
+.pcls{position:absolute;top:1.25rem;right:1.5rem;background:none;border:none;color:var(--muted);font-size:20px;cursor:none;transition:color .2s;line-height:1;}
+.pcls:hover{color:var(--accent);}
+.ptag{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:.9rem;display:flex;align-items:center;gap:8px;}
+.ptag::before{content:'';display:inline-block;width:16px;height:1px;background:var(--accent);}
+.ptitle{font-family:'Syne',sans-serif;font-size:1.9rem;font-weight:700;margin-bottom:1.25rem;line-height:1.1;}
+.pbody{color:var(--muted);line-height:1.9;font-size:13px;}
+.pbody p{margin-bottom:.9rem;}
+.pbody strong{color:var(--text);font-weight:400;}
+.pactions{display:flex;gap:.7rem;margin-top:1.75rem;flex-wrap:wrap;}
+.pbtn{padding:10px 20px;border:1px solid rgba(93,228,199,.22);background:none;color:var(--accent);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;cursor:none;transition:all .2s;}
+.pbtn:hover{background:rgba(93,228,199,.07);border-color:var(--accent);}
+.pbtn.next{background:var(--accent);color:#02030a;border-color:var(--accent);}
+.pbtn.next:hover{opacity:.85;}
+
+/* stat row */
+.srow{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(93,228,199,.08);margin:1.4rem 0;}
+.scell{padding:.9rem;background:rgba(8,10,18,.95);}
+.sn{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;color:var(--accent);}
+.sl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+
+/* resume download bar */
+.resume-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border:1px solid rgba(93,228,199,.18);background:rgba(93,228,199,.04);margin:1.25rem 0;gap:1rem;}
+.resume-bar-info{display:flex;align-items:center;gap:10px;}
+.resume-icon{font-size:20px;color:var(--accent);}
+.resume-name{font-size:13px;color:var(--text);}
+.resume-meta{font-size:10px;color:var(--muted);letter-spacing:.08em;margin-top:2px;}
+.dl-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:var(--accent);color:#02030a;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;border:none;cursor:none;white-space:nowrap;transition:opacity .2s;text-decoration:none;}
+.dl-btn:hover{opacity:.82;}
+
+/* timeline */
+.tline{padding-left:1.5rem;border-left:1px solid rgba(93,228,199,.15);margin:1.4rem 0;}
+.titem{position:relative;padding-bottom:1.6rem;}
+.titem::before{content:'';position:absolute;left:-1.65rem;top:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.trole{font-family:'Syne',sans-serif;font-size:.95rem;font-weight:600;margin-bottom:2px;}
+.tco{color:var(--accent);font-size:11px;letter-spacing:.05em;}
+.tperiod{font-size:10px;color:var(--muted);letter-spacing:.1em;margin:.22rem 0 .45rem;}
+.tdesc{font-size:12px;color:var(--muted);line-height:1.8;}
+
+/* project cards */
+.pgrid{display:grid;gap:1px;background:rgba(93,228,199,.06);margin:1.4rem 0;}
+.pcard{background:rgba(8,10,18,.95);padding:1.1rem;}
+.pname{font-family:'Syne',sans-serif;font-size:.92rem;font-weight:700;margin-bottom:.35rem;}
+.pdesc2{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:.65rem;}
+.ptags2{display:flex;flex-wrap:wrap;gap:5px;}
+.ptag2{font-size:10px;border:1px solid rgba(93,228,199,.12);color:var(--muted);padding:3px 8px;}
+
+/* chip groups */
+.cgroup{margin:1.1rem 0;}
+.cgtitle{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{padding:5px 11px;border:1px solid rgba(93,228,199,.14);font-size:11px;color:var(--muted);}
+
+/* contact links */
+.clinks{display:flex;flex-direction:column;gap:.65rem;margin:1.25rem 0;}
+.clink{display:flex;align-items:center;gap:10px;padding:.9rem 1.1rem;border:1px solid rgba(93,228,199,.1);color:var(--text);text-decoration:none;font-size:13px;transition:all .2s;}
+.clink:hover{border-color:rgba(93,228,199,.35);background:rgba(93,228,199,.04);color:var(--accent);}
+.clabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);min-width:64px;}
+
+/* Mute button — bottom left */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes scanpulse{0%,100%{opacity:.3;}50%{opacity:1;}}
+@keyframes blink{0%,100%{opacity:.4;}50%{opacity:1;}}
+</style>
+</head>
+<body>
+<div class="vig"></div>
+<div class="scan"></div>
+<div id="cur"></div>
+<div id="cur-ring"></div>
+<canvas id="c"></canvas>
+
+<!-- Warp overlay -->
+<div id="warp"><canvas id="wc"></canvas></div>
+
+<!-- Intro -->
+<div id="intro">
+  <div id="intro-tag">AI Engineering · Istanbul, Türkiye</div>
+  <h1 id="intro-name"><span class="dim">Aria </span><span class="bright">Sokhangoo</span></h1>
+  <p id="intro-sub">Click the neural sphere to enter<br>and travel through my portfolio</p>
+</div>
+<div id="intro-hint"><div class="hint-line"></div><span>Click sphere to enter</span></div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-logo">Aria.ai</div>
+  <div class="hud-nav">
+    <button onclick="jumpTo(0)">About</button>
+    <button onclick="jumpTo(1)">Resume</button>
+    <button onclick="jumpTo(2)">Projects</button>
+    <button onclick="jumpTo(3)">Skills</button>
+    <button onclick="jumpTo(4)">Contact</button>
+  </div>
+</div>
+
+
+<!-- Progress dots -->
+<div id="pdots">
+  <div class="pdot" onclick="jumpTo(0)" title="About"></div>
+  <div class="pdot" onclick="jumpTo(1)" title="Resume"></div>
+  <div class="pdot" onclick="jumpTo(2)" title="Projects"></div>
+  <div class="pdot" onclick="jumpTo(3)" title="Skills"></div>
+  <div class="pdot" onclick="jumpTo(4)" title="Contact"></div>
+</div>
+
+<!-- Travel HUD -->
+<div id="thud">
+  <div class="tdot"></div>
+  <span id="tlabel">Travelling...</span>
+  <button class="tbtn" id="openbtn" onclick="openCurrent()">Open Node ↗</button>
+  <button class="tbtn" id="nextbtn" onclick="nextNode()">Next Node →</button>
+  <button class="tbtn exit" onclick="exitTravel()">Exit ✕</button>
+</div>
+
+<!-- Panel overlay -->
+<div id="poverlay">
+
+  <!-- About -->
+  <div class="npanel" id="p0">
+    <button class="pcls" onclick="closePanel()">✕</button>
+    <div class="ptag">Node 01 — About · The Sun</div>
+    <h2 class="ptitle">Building AI that<br><span style="color:var(--accent)">actually works.</span></h2>
+    <div class="pbody">
+      <p>I'm an AI Engineering student at <strong>Bahçeşehir University</strong> specializing in LLM-based systems, retrieval-augmented generation, and AI explainability.</p>
+      <p>My focus: systems that are <strong>reliable, interpretable, and production-oriented</strong> — not just impressive in a notebook. Currently interning at <strong>TrustAI</strong> working on LLM governance in regulated environments.</p>
+      <div class="srow">
+        <div class="scell"><div class="sn">3+</div><div class="sl">Years building</div></div>
+        <div class="scell"><div class="sn">RAG</div><div class="sl">Core focus</div></div>
+        <div class="scell"><div class="sn">2026</div><div class="sl">BSc expected</div></div>
+      </div>
+      <p><strong>Location:</strong> Istanbul, Türkiye &nbsp;·&nbsp; <strong>Status:</strong> <span style="color:var(--accent)">● Open to opportunities</span></p>
+    </div>
+    <div class="pactions">
+      <button class="pbtn next" onclick="closeAndNext()">Travel to Resume →</button>
+      <button class="pbtn" onclick="closePanel()">Stay here</button>
+    </div>
+  </div>
+
+  <!-- Resume -->
+  <div class="npanel" id="p1">
+    <button class="pcls" onclick="closePanel()">✕</button>
+    <div class="ptag">Node 02 — Resume · Earth</div>
+    <h2 class="ptitle">My<br><span style="color:var(--accent)">Resume.</span></h2>
+    <div class="pbody">
+      <p>Download my full resume to see my experience, education, and projects in detail.</p>
+      <div class="resume-bar">
+        <div class="resume-bar-info">
+          <span class="resume-icon">⬇</span>
+          <div>
+            <div class="resume-name">Aria_Sokhangoo_Resume.pdf</div>
+            <div class="resume-meta">AI Engineering · 2026</div>
+          </div>
+        </div>
+        <a class="dl-btn" href="Resume-02.pdf" download="Aria_Sokhangoo_Resume.pdf">Download PDF ↓</a>
+      </div>
+    </div>
+    <div class="pactions">
+      <button class="pbtn next" onclick="closeAndNext()">Travel to Projects →</button>
+      <button class="pbtn" onclick="closePanel()">Stay here</button>
+    </div>
+  </div>
+
+  <!-- Projects -->
+  <div class="npanel" id="p2">
+    <button class="pcls" onclick="closePanel()">✕</button>
+    <div class="ptag">Node 03 — Projects · Mars</div>
+    <h2 class="ptitle">Selected<br><span style="color:var(--accent)">Work.</span></h2>
+    <div class="pbody">
+      <div class="pgrid">
+        <div class="pcard">
+          <div class="pname">FinRAG — Financial RAG System</div>
+          <div class="pdesc2">Multi-stage pipeline: ingestion → normalization → graph construction → hybrid retrieval → cited answer generation → evaluation. Graph-based reasoning for multi-perspective financial analysis.</div>
+          <div class="ptags2"><span class="ptag2">RAG</span><span class="ptag2">Graph Reasoning</span><span class="ptag2">Hybrid Retrieval</span><span class="ptag2">FAISS</span></div>
+        </div>
+        <div class="pcard">
+          <div class="pname">AI Influencer Bots (Telegram)</div>
+          <div class="pdesc2">Autonomous content generation and interaction management bots with persona-driven agent workflows and consistent tone via prompt engineering.</div>
+          <div class="ptags2"><span class="ptag2">Agents</span><span class="ptag2">Telegram API</span><span class="ptag2">Prompt Engineering</span></div>
+        </div>
+        <div class="pcard">
+          <div class="pname">Human Activity Recognition</div>
+          <div class="pdesc2">3D CNN and Transformer models for temporal activity recognition from sensor data. Accurate sequence modeling for real-world classification.</div>
+          <div class="ptags2"><span class="ptag2">PyTorch</span><span class="ptag2">3D CNN</span><span class="ptag2">Transformers</span><span class="ptag2">Deep Learning</span></div>
+        </div>
+        <div class="pcard">
+          <div class="pname">LLM Explainability Research</div>
+          <div class="pdesc2">Systematic comparison of CoT, CoV, GoT prompting strategies. Evaluated coherence, accuracy, and grounding in high-risk regulated environments at TrustAI.</div>
+          <div class="ptags2"><span class="ptag2">CoT/CoV/GoT</span><span class="ptag2">Evaluation</span><span class="ptag2">FastAPI</span><span class="ptag2">AI Governance</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="pactions">
+      <button class="pbtn next" onclick="closeAndNext()">Travel to Skills →</button>
+      <button class="pbtn" onclick="closePanel()">Stay here</button>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="npanel" id="p3">
+    <button class="pcls" onclick="closePanel()">✕</button>
+    <div class="ptag">Node 04 — Skills · Jupiter</div>
+    <h2 class="ptitle">The Tech<br><span style="color:var(--accent)">Stack.</span></h2>
+    <div class="pbody">
+      <div class="cgroup"><div class="cgtitle">LLM Systems</div><div class="chips"><span class="chip">RAG</span><span class="chip">Prompt Engineering</span><span class="chip">Agent Workflows</span><span class="chip">Context Engineering</span><span class="chip">Multi-stage Pipelines</span><span class="chip">Hybrid Retrieval</span></div></div>
+      <div class="cgroup"><div class="cgtitle">Explainability & Evaluation</div><div class="chips"><span class="chip">CoT</span><span class="chip">CoV</span><span class="chip">GoT</span><span class="chip">Model Evaluation</span><span class="chip">Reliability Analysis</span><span class="chip">AI Governance</span></div></div>
+      <div class="cgroup"><div class="cgtitle">ML / Deep Learning</div><div class="chips"><span class="chip">PyTorch</span><span class="chip">TensorFlow</span><span class="chip">Transformers</span><span class="chip">3D CNNs</span><span class="chip">Feature Engineering</span><span class="chip">Supervised Learning</span></div></div>
+      <div class="cgroup"><div class="cgtitle">Backend & Infrastructure</div><div class="chips"><span class="chip">FastAPI</span><span class="chip">REST APIs</span><span class="chip">Microservices</span><span class="chip">Docker</span><span class="chip">MongoDB</span><span class="chip">FAISS</span><span class="chip">Vector DBs</span><span class="chip">Git</span></div></div>
+    </div>
+    <div class="pactions">
+      <button class="pbtn next" onclick="closeAndNext()">Travel to Contact →</button>
+      <button class="pbtn" onclick="closePanel()">Stay here</button>
+    </div>
+  </div>
+
+  <!-- Contact -->
+  <div class="npanel" id="p4">
+    <button class="pcls" onclick="closePanel()">✕</button>
+    <div class="ptag">Node 05 — Contact · Saturn</div>
+    <h2 class="ptitle">Let's build<br><span style="color:var(--accent)">something.</span></h2>
+    <div class="pbody">
+      <p>Open to full-time roles, internships, freelance projects, and research collaborations in applied AI and LLM systems.</p>
+      <div class="clinks">
+        <a href="mailto:epochalypse.ai@gmail.com" class="clink"><span class="clabel">Email</span>epochalypse.ai@gmail.com</a>
+        <a href="https://github.com/Epochalypse00" target="_blank" class="clink"><span class="clabel">GitHub</span>github.com/Epochalypse00</a>
+        <a href="https://www.linkedin.com/in/aria-sokhangoo-027835287/" target="_blank" class="clink"><span class="clabel">LinkedIn</span>linkedin.com/in/aria-sokhangoo</a>
+        <a href="#" class="clink"><span class="clabel">Location</span>Istanbul, Türkiye</a>
+      </div>
+    </div>
+    <div class="pactions">
+      <button class="pbtn next" onclick="exitTravel()">Exit Neural Space ✕</button>
+      <button class="pbtn" onclick="closePanel()">Stay here</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDERER & SCENE
+// ─────────────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.001, 2000);
+camera.position.set(0,0,7);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEXTURES — GPU-safe procedural planets (256px, no heavy per-pixel FBM)
+// ─────────────────────────────────────────────────────────────────────────────
+function makeTexture(fn, size=256){
+  const c=document.createElement('canvas'); c.width=c.height=size;
+  fn(c.getContext('2d'),size);
+  return new THREE.CanvasTexture(c);
+}
+
+// Lightweight 2-octave noise (no heavy FBM loops)
+function h(x,y){return(Math.sin(x*127.1+y*311.7)*43758.5453)%1;}
+function n2(x,y){
+  const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+  const ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy);
+  return Math.abs(h(ix,iy)+(h(ix+1,iy)-h(ix,iy))*ux+(h(ix,iy+1)-h(ix,iy))*uy+(h(ix+1,iy+1)-h(ix+1,iy)-h(ix,iy+1)+h(ix,iy))*ux*uy);
+}
+// 2-octave fBm — fast enough for 256px
+function fbm2(x,y){return n2(x,y)*0.6+n2(x*2.1,y*2.1)*0.4;}
+
+// ── SUN ──────────────────────────────────────────────────────────────────────
+const sunTex=makeTexture((ctx,s)=>{
+  // Base plasma gradient
+  const gBase=ctx.createRadialGradient(s*.5,s*.45,0,s*.5,s*.5,s*.55);
+  gBase.addColorStop(0,'#fff5a0');gBase.addColorStop(.25,'#ffcc00');
+  gBase.addColorStop(.6,'#ff7700');gBase.addColorStop(1,'#bb2200');
+  ctx.fillStyle=gBase;ctx.fillRect(0,0,s,s);
+  // Turbulent cells — cheap: just radial blobs with noise positions
+  for(let i=0;i<180;i++){
+    const t=i/180,ang=t*Math.PI*24;
+    const r=s*(0.08+fbm2(Math.cos(ang)*3,Math.sin(ang)*3)*0.38);
+    const cx2=s*.5+Math.cos(ang)*r,cy2=s*.5+Math.sin(ang)*r;
+    const sz=4+fbm2(i,i*.7)*18;
+    const g2=ctx.createRadialGradient(cx2,cy2,0,cx2,cy2,sz);
+    g2.addColorStop(0,'rgba(255,240,100,0.55)');g2.addColorStop(1,'rgba(255,80,0,0)');
+    ctx.fillStyle=g2;ctx.beginPath();ctx.arc(cx2,cy2,sz,0,Math.PI*2);ctx.fill();
+  }
+  // Dark sunspots
+  for(let i=0;i<8;i++){
+    const sx=s*(.2+Math.random()*.6),sy=s*(.2+Math.random()*.6);
+    const sr=s*(.015+Math.random()*.025);
+    const gs=ctx.createRadialGradient(sx,sy,0,sx,sy,sr);
+    gs.addColorStop(0,'rgba(60,10,0,0.7)');gs.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gs;ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+  }
+});
+
+// ── EARTH ─────────────────────────────────────────────────────────────────────
+const earthTex=makeTexture((ctx,s)=>{
+  const img=ctx.createImageData(s,s);
+  for(let y=0;y<s;y++){
+    const lat=Math.abs(y/s-.5)*2;
+    for(let x=0;x<s;x++){
+      const land=fbm2(x/s*3.5+1.2,y/s*3.5+0.8);
+      let r,g,b;
+      if(land>0.50){
+        if(lat>0.78){r=225;g=235;b=245;}
+        else if(lat>0.58){r=155;g=175;b=135;}
+        else if(land>0.64){r=195;g=165;b=105;}
+        else{r=55+Math.floor(land*90);g=125+Math.floor(land*65);b=45;}
+      } else {
+        const d=land/0.50;
+        r=8+Math.floor(d*35);g=35+Math.floor(d*95);b=115+Math.floor(d*85);
+      }
+      const i4=(y*s+x)*4;
+      img.data[i4]=r;img.data[i4+1]=g;img.data[i4+2]=b;img.data[i4+3]=255;
+    }
+  }
+  ctx.putImageData(img,0,0);
+  // Sparse cloud streaks
+  for(let i=0;i<28;i++){
+    const cx2=Math.random()*s,cy2=Math.random()*s,cw=s*(.05+Math.random()*.18),ch=s*.018;
+    const gc=ctx.createRadialGradient(cx2,cy2,0,cx2,cy2,cw);
+    gc.addColorStop(0,'rgba(255,255,255,0.55)');gc.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=gc;ctx.save();ctx.translate(cx2,cy2);ctx.scale(1,0.25);
+    ctx.beginPath();ctx.arc(0,0,cw,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  // Ice caps
+  ctx.fillStyle='rgba(230,242,255,0.88)';
+  ctx.beginPath();ctx.ellipse(s/2,3,s*.32,s*.1,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(s/2,s-3,s*.28,s*.08,0,0,Math.PI*2);ctx.fill();
+});
+
+// ── MARS ──────────────────────────────────────────────────────────────────────
+const marsTex=makeTexture((ctx,s)=>{
+  const img=ctx.createImageData(s,s);
+  for(let y=0;y<s;y++) for(let x=0;x<s;x++){
+    const n=fbm2(x/s*4+0.5,y/s*4+0.5);
+    const r=Math.min(255,Math.floor(148+n*85));
+    const g=Math.min(255,Math.floor(48+n*52));
+    const b=Math.min(255,Math.floor(12+n*18));
+    const i4=(y*s+x)*4;
+    img.data[i4]=r;img.data[i4+1]=g;img.data[i4+2]=b;img.data[i4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // Impact craters
+  for(let i=0;i<22;i++){
+    const cx2=Math.random()*s,cy2=Math.random()*s,cr=s*(.012+Math.random()*.04);
+    ctx.strokeStyle='rgba(70,20,5,0.45)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(cx2,cy2,cr,0,Math.PI*2);ctx.stroke();
+    const gc=ctx.createRadialGradient(cx2,cy2,0,cx2,cy2,cr);
+    gc.addColorStop(0,'rgba(55,15,5,0.3)');gc.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=gc;ctx.beginPath();ctx.arc(cx2,cy2,cr,0,Math.PI*2);ctx.fill();
+  }
+  // Valles Marineris
+  ctx.strokeStyle='rgba(50,10,2,0.5)';ctx.lineWidth=5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(s*.22,s*.48);ctx.bezierCurveTo(s*.42,s*.44,s*.58,s*.51,s*.78,s*.47);ctx.stroke();
+  // Olympus Mons
+  const vm=ctx.createRadialGradient(s*.21,s*.34,0,s*.21,s*.34,s*.07);
+  vm.addColorStop(0,'rgba(175,85,55,0.7)');vm.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=vm;ctx.beginPath();ctx.arc(s*.21,s*.34,s*.07,0,Math.PI*2);ctx.fill();
+  // North polar cap
+  ctx.fillStyle='rgba(215,230,250,0.82)';
+  ctx.beginPath();ctx.ellipse(s/2,4,s*.26,s*.07,0,0,Math.PI*2);ctx.fill();
+});
+
+// ── JUPITER — row-precomputed bands, no per-pixel FBM ────────────────────────
+const jupiterTex=makeTexture((ctx,s)=>{
+  const img=ctx.createImageData(s,s);
+  const pal=[[210,160,80],[245,200,115],[188,118,52],[255,212,132],[168,98,42],[238,178,96],[198,132,62],[222,182,102],[158,88,38],[248,205,118]];
+  // Precompute per-row band color + wave offset
+  const rowR=new Float32Array(s),rowG=new Float32Array(s),rowB=new Float32Array(s);
+  for(let y=0;y<s;y++){
+    const by=y/s*pal.length*1.6;
+    const bi=Math.floor(by)%pal.length,bi2=(bi+1)%pal.length,bf=by%1;
+    rowR[y]=pal[bi][0]*(1-bf)+pal[bi2][0]*bf;
+    rowG[y]=pal[bi][1]*(1-bf)+pal[bi2][1]*bf;
+    rowB[y]=pal[bi][2]*(1-bf)+pal[bi2][2]*bf;
+  }
+  for(let y=0;y<s;y++) for(let x=0;x<s;x++){
+    // Wave turbulence: sine only, no FBM
+    const wave=Math.sin(y/s*Math.PI*22+x/s*Math.PI*3)*6;
+    const yw=Math.max(0,Math.min(s-1,y+Math.floor(wave)));
+    const jit=(Math.random()-.5)*10;
+    const i4=(y*s+x)*4;
+    img.data[i4]=Math.min(255,Math.max(0,Math.floor(rowR[yw]+jit)));
+    img.data[i4+1]=Math.min(255,Math.max(0,Math.floor(rowG[yw]+jit*.7)));
+    img.data[i4+2]=Math.min(255,Math.max(0,Math.floor(rowB[yw]+jit*.4)));
+    img.data[i4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // Great Red Spot
+  const grs=ctx.createRadialGradient(s*.6,s*.58,0,s*.6,s*.58,s*.09);
+  grs.addColorStop(0,'rgba(155,35,18,0.88)');grs.addColorStop(.5,'rgba(185,68,28,0.55)');grs.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grs;ctx.save();ctx.translate(s*.6,s*.58);ctx.scale(1.65,1);
+  ctx.beginPath();ctx.arc(0,0,s*.062,0,Math.PI*2);ctx.fill();ctx.restore();
+  // Oval storms
+  for(let i=0;i<5;i++){
+    const ox=Math.random()*s,oy=s*(.1+Math.random()*.8);
+    const og=ctx.createRadialGradient(ox,oy,0,ox,oy,s*.02);
+    og.addColorStop(0,'rgba(255,248,225,0.55)');og.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=og;ctx.save();ctx.translate(ox,oy);ctx.scale(1.4,1);
+    ctx.beginPath();ctx.arc(0,0,s*.02,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+});
+
+// ── SATURN — row-precomputed, same trick ─────────────────────────────────────
+const saturnTex=makeTexture((ctx,s)=>{
+  const img=ctx.createImageData(s,s);
+  const pal=[[232,208,142],[212,188,122],[196,172,108],[242,218,152],[178,152,88],[228,202,138],[202,178,118]];
+  const rowR=new Float32Array(s),rowG=new Float32Array(s),rowB=new Float32Array(s);
+  for(let y=0;y<s;y++){
+    const by=y/s*pal.length*2.2;
+    const bi=Math.floor(by)%pal.length,bi2=(bi+1)%pal.length,bf=by%1;
+    rowR[y]=pal[bi][0]*(1-bf)+pal[bi2][0]*bf;
+    rowG[y]=pal[bi][1]*(1-bf)+pal[bi2][1]*bf;
+    rowB[y]=pal[bi][2]*(1-bf)+pal[bi2][2]*bf;
+  }
+  for(let y=0;y<s;y++) for(let x=0;x<s;x++){
+    const wave=Math.sin(y/s*Math.PI*16+x/s*Math.PI*1.5)*4;
+    const yw=Math.max(0,Math.min(s-1,y+Math.floor(wave)));
+    const jit=(Math.random()-.5)*7;
+    const i4=(y*s+x)*4;
+    img.data[i4]=Math.min(255,Math.floor(rowR[yw]+jit));
+    img.data[i4+1]=Math.min(255,Math.floor(rowG[yw]+jit*.8));
+    img.data[i4+2]=Math.min(255,Math.floor(rowB[yw]+jit*.5));
+    img.data[i4+3]=255;
+  }
+  ctx.putImageData(img,0,0);
+  // Saturn hexagonal north polar vortex
+  ctx.strokeStyle='rgba(110,82,45,0.5)';ctx.lineWidth=2;
+  ctx.save();ctx.translate(s/2,s*.09);ctx.beginPath();
+  for(let i=0;i<=6;i++){const a=i/6*Math.PI*2-Math.PI/2;i===0?ctx.moveTo(Math.cos(a)*s*.065,Math.sin(a)*s*.042):ctx.lineTo(Math.cos(a)*s*.065,Math.sin(a)*s*.042);}
+  ctx.closePath();ctx.stroke();ctx.restore();
+});
+
+// ── SATURN RINGS — pure gradient, no pixel loop ───────────────────────────────
+const ringTex=makeTexture((ctx,s)=>{
+  const ringBands=[
+    {x:0,   w:.08, a:.12, c:'210,185,130'},
+    {x:.09, w:.12, a:.52, c:'220,195,140'},
+    {x:.22, w:.21, a:.80, c:'238,212,158'},
+    {x:.43, w:.03, a:.04, c:'10,8,5'},
+    {x:.47, w:.27, a:.70, c:'228,202,148'},
+    {x:.75, w:.05, a:.28, c:'200,175,122'},
+    {x:.81, w:.1,  a:.12, c:'190,165,112'},
+    {x:.92, w:.08, a:.06, c:'182,158,105'},
+  ];
+  ringBands.forEach(b=>{
+    const g=ctx.createLinearGradient(0,0,s,0);
+    g.addColorStop(Math.max(0,b.x-.008),`rgba(${b.c},0)`);
+    g.addColorStop(b.x+b.w*.2,`rgba(${b.c},${b.a})`);
+    g.addColorStop(b.x+b.w*.8,`rgba(${b.c},${b.a})`);
+    g.addColorStop(Math.min(1,b.x+b.w+.008),`rgba(${b.c},0)`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,s,s);
+  });
+},512);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLANET CONFIGS
+// ─────────────────────────────────────────────────────────────────────────────
+const PLANET_CFG = [
+  {name:'Sun',    tex:sunTex,    r:0.28, emissive:0xff6600, emissiveInt:0.8, rotY:0.008, rotX:0.002, rotZ:0.001, light:true},
+  {name:'Earth',  tex:earthTex,  r:0.18, emissive:0x113366, emissiveInt:0.1, rotY:0.014, rotX:0.003, rotZ:0.001},
+  {name:'Mars',   tex:marsTex,   r:0.14, emissive:0x551100, emissiveInt:0.1, rotY:0.012, rotX:0.002, rotZ:0.002},
+  {name:'Jupiter',tex:jupiterTex,r:0.26, emissive:0x332211, emissiveInt:0.05,rotY:0.022, rotX:0.001, rotZ:0.001},
+  {name:'Saturn', tex:saturnTex, r:0.22, emissive:0x332200, emissiveInt:0.05,rotY:0.016, rotX:0.002, rotZ:0.001, rings:true},
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NEURAL SPHERE
+// ─────────────────────────────────────────────────────────────────────────────
+const SPHERE_R = 2.5;
+const NUM_BG_NODES = 100;
+
+// Fibonacci sphere points
+function fibSphere(n,r){
+  const pts=[]; const phi=Math.PI*(3-Math.sqrt(5));
+  for(let i=0;i<n;i++){
+    const y=1-(i/(n-1))*2; const rad=Math.sqrt(1-y*y);
+    const th=phi*i;
+    pts.push(new THREE.Vector3(Math.cos(th)*rad*r,y*r,Math.sin(th)*rad*r));
+  }
+  return pts;
+}
+
+const bgPositions = fibSphere(NUM_BG_NODES, SPHERE_R);
+
+// 5 main node positions (evenly distributed)
+const mainIndices = [0,20,40,60,80];
+const mainPositions = mainIndices.map(i=>bgPositions[i].clone());
+
+const sphereGroup = new THREE.Group();
+scene.add(sphereGroup);
+
+// Background nodes (tiny spheres)
+const bgNodeGeo = new THREE.SphereGeometry(0.018,6,6);
+bgPositions.forEach((pos,i)=>{
+  if(mainIndices.includes(i)) return;
+  const mat = new THREE.MeshBasicMaterial({color:0x5de4c7,transparent:true,opacity:0.4});
+  const m = new THREE.Mesh(bgNodeGeo,mat);
+  m.position.copy(pos);
+  sphereGroup.add(m);
+});
+
+// Edges between bg nodes
+const edgeMat = new THREE.LineBasicMaterial({color:0x5de4c7,transparent:true,opacity:0.08});
+for(let i=0;i<NUM_BG_NODES;i++){
+  const dists=[];
+  for(let j=0;j<NUM_BG_NODES;j++){if(i===j)continue;dists.push({j,d:bgPositions[i].distanceTo(bgPositions[j])});}
+  dists.sort((a,b)=>a.d-b.d);
+  for(let c=0;c<3;c++){
+    if(dists[c].j<i)continue;
+    const geo=new THREE.BufferGeometry().setFromPoints([bgPositions[i],bgPositions[dists[c].j]]);
+    sphereGroup.add(new THREE.Line(geo,edgeMat.clone()));
+  }
+}
+
+// Planet meshes at main nodes
+const planetMeshes = [];
+const planetGroups = [];
+
+PLANET_CFG.forEach((cfg,idx)=>{
+  const pos = mainPositions[idx];
+  const g = new THREE.Group();
+  g.position.copy(pos);
+
+  // Planet sphere
+  const geo = new THREE.SphereGeometry(cfg.r, 48, 48);
+  const mat = new THREE.MeshStandardMaterial({
+    map: cfg.tex,
+    emissiveMap: cfg.tex,
+    emissive: new THREE.Color(cfg.emissive),
+    emissiveIntensity: cfg.emissiveInt,
+    roughness: 0.8,
+    metalness: 0.0
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  g.add(mesh);
+  planetMeshes.push(mesh);
+
+  // Sun glow halo
+  if(cfg.light){
+    const haloGeo = new THREE.SphereGeometry(cfg.r*1.25,32,32);
+    const haloMat = new THREE.MeshBasicMaterial({color:0xff9900,transparent:true,opacity:0.12,side:THREE.BackSide});
+    g.add(new THREE.Mesh(haloGeo,haloMat));
+    const haloGeo2 = new THREE.SphereGeometry(cfg.r*1.6,32,32);
+    const haloMat2 = new THREE.MeshBasicMaterial({color:0xff6600,transparent:true,opacity:0.06,side:THREE.BackSide});
+    g.add(new THREE.Mesh(haloGeo2,haloMat2));
+    // Point light from sun
+    const pl = new THREE.PointLight(0xffaa44,2.5,30);
+    g.add(pl);
+  }
+
+  // Saturn rings
+  if(cfg.rings){
+    const ringGeo = new THREE.RingGeometry(cfg.r*1.4, cfg.r*2.4, 64);
+    const ringMat = new THREE.MeshBasicMaterial({map:ringTex,transparent:true,opacity:0.75,side:THREE.DoubleSide});
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI * 0.42;
+    g.add(ring);
+  }
+
+  // Glow ring around node
+  const ringGeo = new THREE.RingGeometry(cfg.r*1.35, cfg.r*1.5, 64);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: [0xffaa00,0x4488ff,0xff4422,0xffaa44,0xddccaa][idx],
+    transparent:true, opacity:0.25, side:THREE.DoubleSide
+  });
+  const gring = new THREE.Mesh(ringGeo, ringMat);
+  gring.lookAt(new THREE.Vector3(0,0,0));
+  g.add(gring);
+
+  sphereGroup.add(g);
+  planetGroups.push(g);
+});
+
+// Edges from planet nodes to nearby bg nodes
+const mainEdgeMat = new THREE.LineBasicMaterial({color:0x5de4c7,transparent:true,opacity:0.18});
+mainIndices.forEach((mi,pi)=>{
+  const dists=[];
+  bgPositions.forEach((p,i)=>{if(mainIndices.includes(i))return;dists.push({i,d:mainPositions[pi].distanceTo(p)});});
+  dists.sort((a,b)=>a.d-b.d);
+  for(let c=0;c<5;c++){
+    const geo=new THREE.BufferGeometry().setFromPoints([mainPositions[pi],bgPositions[dists[c].i]]);
+    sphereGroup.add(new THREE.Line(geo,mainEdgeMat.clone()));
+  }
+});
+
+// Edges between planet nodes (the travel path)
+for(let i=0;i<5;i++){
+  const j=(i+1)%5;
+  const geo=new THREE.BufferGeometry().setFromPoints([mainPositions[i],mainPositions[j]]);
+  const mat=new THREE.LineBasicMaterial({color:0xa78bfa,transparent:true,opacity:0.3});
+  sphereGroup.add(new THREE.Line(geo,mat));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIVERSE BACKGROUND
+// ─────────────────────────────────────────────────────────────────────────────
+// Milky way style starfield
+const starGeo = new THREE.BufferGeometry();
+const starPos=[]; const starCol=[];
+for(let i=0;i<8000;i++){
+  const theta=Math.random()*Math.PI*2;
+  const phi=Math.acos(2*Math.random()-1);
+  const r=50+Math.random()*500;
+  starPos.push(Math.sin(phi)*Math.cos(theta)*r, Math.sin(phi)*Math.sin(theta)*r, Math.cos(phi)*r);
+  // Color: mostly white, some blue/orange tints
+  const t=Math.random();
+  if(t<.15){starCol.push(0.7,0.8,1.0);}
+  else if(t<.25){starCol.push(1.0,0.85,0.6);}
+  else{starCol.push(1,1,1);}
+}
+starGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3));
+starGeo.setAttribute('color',new THREE.Float32BufferAttribute(starCol,3));
+const starMat=new THREE.PointsMaterial({size:0.5,vertexColors:true,transparent:true,opacity:0.8,sizeAttenuation:true});
+scene.add(new THREE.Points(starGeo,starMat));
+
+// Nebula clouds (large transparent spheres with gradient color)
+function makeNebulaSprite(col1,col2){
+  const c=document.createElement('canvas');c.width=c.height=256;
+  const ctx=c.getContext('2d');
+  const g=ctx.createRadialGradient(128,128,0,128,128,128);
+  g.addColorStop(0,col1); g.addColorStop(1,col2);
+  ctx.fillStyle=g; ctx.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+const nebulaMat1=new THREE.SpriteMaterial({map:makeNebulaSprite('rgba(93,80,200,.18)','rgba(20,10,60,0)'),transparent:true,depthWrite:false});
+const nebulaMat2=new THREE.SpriteMaterial({map:makeNebulaSprite('rgba(200,50,100,.1)','rgba(60,10,30,0)'),transparent:true,depthWrite:false});
+const nebulaMat3=new THREE.SpriteMaterial({map:makeNebulaSprite('rgba(30,150,180,.1)','rgba(10,40,60,0)'),transparent:true,depthWrite:false});
+[[nebulaMat1,80,30,50],[nebulaMat2,-70,-20,40],[nebulaMat3,20,-60,60]].forEach(([mat,x,y,s])=>{
+  const spr=new THREE.Sprite(mat);
+  spr.position.set(x,y,-100);
+  spr.scale.set(s*6,s*6,1);
+  scene.add(spr);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMET — simple bright sphere, no tail, appears every 11 seconds
+// ─────────────────────────────────────────────────────────────────────────────
+const cometGroup = new THREE.Group();
+scene.add(cometGroup);
+cometGroup.visible = false;
+
+const nucleusGeo = new THREE.SphereGeometry(0.07, 12, 12);
+const nucleusMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+cometGroup.add(new THREE.Mesh(nucleusGeo, nucleusMat));
+
+// Soft glow halo around the nucleus only
+const cometGlowTex = makeNebulaSprite('rgba(220,235,255,0.9)', 'rgba(180,210,255,0)');
+const cometGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: cometGlowTex, transparent: true, opacity: 0.7, depthWrite: false }));
+cometGlow.scale.set(0.5, 0.5, 1);
+cometGroup.add(cometGlow);
+
+// Paths — deep background behind the sphere
+const cometPaths = [
+  new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-55, 22, -35),
+    new THREE.Vector3(-20,  8, -28),
+    new THREE.Vector3( 10, -4, -25),
+    new THREE.Vector3( 50,-18, -38)
+  ]),
+  new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-50,-20, -40),
+    new THREE.Vector3(-18, -6, -30),
+    new THREE.Vector3( 12,  6, -26),
+    new THREE.Vector3( 55, 22, -38)
+  ]),
+  new THREE.CatmullRomCurve3([
+    new THREE.Vector3( 55, 18, -32),
+    new THREE.Vector3( 20,  6, -24),
+    new THREE.Vector3(-10, -5, -20),
+    new THREE.Vector3(-52,-20, -36)
+  ]),
+];
+let cometPathIdx  = 0;
+let cometPath     = cometPaths[0];
+let cometT        = -999;   // large negative = waiting
+let cometActive   = false;
+let cometTimer    = 0;      // counts up to 11s between passes
+const COMET_INTERVAL = 11;  // seconds between appearances
+const COMET_SPEED    = 0.22; // crosses screen in ~4-5s
+
+function launchComet(){
+  cometPathIdx = (cometPathIdx + 1) % cometPaths.length;
+  cometPath    = cometPaths[cometPathIdx];
+  cometT       = 0;
+  cometActive  = true;
+  cometGroup.visible = true;
+}
+
+
+
+// Ambient lights
+scene.add(new THREE.AmbientLight(0x223355,0.8));
+const dirLight=new THREE.DirectionalLight(0xffffff,0.6);
+dirLight.position.set(5,8,5);
+scene.add(dirLight);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WARP TUNNEL — cinematic hyperspace effect
+// ─────────────────────────────────────────────────────────────────────────────
+const warpEl = document.getElementById('warp');
+const wc = document.getElementById('wc');
+const wctx = wc.getContext('2d');
+let lsActive = false;
+let warpRAF = null;
+
+function resizeWarp(){ wc.width=innerWidth; wc.height=innerHeight; }
+resizeWarp();
+
+// Star particles for warp
+class WarpStar {
+  constructor(w,h){
+    this.w=w; this.h=h;
+    this.reset(true);
+  }
+  reset(init=false){
+    this.angle = Math.random()*Math.PI*2;
+    this.dist = init ? Math.random()*Math.max(this.w,this.h)*0.5 : 1+Math.random()*4;
+    this.speed = 0;
+    this.length = 0;
+    this.hue = 180+Math.random()*60;
+    this.bright = 60+Math.random()*40;
+    this.size = 0.5+Math.random()*1;
+  }
+  update(progress, dt){
+    // Accelerate based on warp progress — exponential feel
+    const accel = 0.5 + progress*progress*18;
+    this.speed += accel * dt * 60;
+    this.length = this.speed * 0.3 * (progress*progress*4+0.2);
+    this.dist += this.speed * dt;
+    if(this.dist > Math.max(this.w,this.h)*0.85) this.reset();
+  }
+  draw(ctx, cx, cy, progress){
+    const x = cx + Math.cos(this.angle)*this.dist;
+    const y = cy + Math.sin(this.angle)*this.dist;
+    const x2 = cx + Math.cos(this.angle)*(this.dist-this.length);
+    const y2 = cy + Math.sin(this.angle)*(this.dist-this.length);
+    const alpha = Math.min(1, progress*2) * Math.min(1, this.dist/80);
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x,y);
+    const g = ctx.createLinearGradient(x2,y2,x,y);
+    g.addColorStop(0,`hsla(${this.hue},90%,${this.bright}%,0)`);
+    g.addColorStop(1,`hsla(${this.hue},90%,${this.bright}%,${alpha})`);
+    ctx.strokeStyle = g;
+    ctx.lineWidth = this.size * (1+progress*2);
+    ctx.stroke();
+  }
+}
+
+// Tunnel rings
+class TunnelRing {
+  constructor(w,h){ this.w=w; this.h=h; this.reset(); }
+  reset(){ this.z=0.01+Math.random()*0.5; this.speed=0; this.hue=180+Math.random()*80; this.twist=Math.random()*Math.PI*2; }
+  update(progress,dt){
+    this.speed = 0.8+progress*progress*6;
+    this.z += this.speed*dt;
+    if(this.z>1.2) this.reset();
+  }
+  draw(ctx,cx,cy,progress){
+    const perspective = 1/(1-Math.min(0.98,this.z));
+    const rx = (this.w*0.55)*perspective * (1-this.z);
+    const ry = (this.h*0.4)*perspective * (1-this.z);
+    if(rx<2||ry<2) return;
+    const alpha = Math.min(0.7, progress*1.5) * (1-this.z*0.6) * Math.min(1, this.z*4);
+    ctx.beginPath();
+    ctx.ellipse(cx,cy,rx,ry,this.twist*0.05,0,Math.PI*2);
+    ctx.strokeStyle = `hsla(${this.hue},80%,70%,${alpha})`;
+    ctx.lineWidth = 1+progress*1.5;
+    ctx.stroke();
+  }
+}
+
+let warpStars = [];
+let tunnelRings = [];
+
+function initWarpParticles(){
+  const w=innerWidth, h=innerHeight;
+  warpStars = Array.from({length:600},()=>new WarpStar(w,h));
+  tunnelRings = Array.from({length:30},()=>{const r=new TunnelRing(w,h); r.z=Math.random(); return r;});
+}
+
+function drawWarpFrame(progress, dt){
+  const w=wc.width, h=wc.height, cx=w/2, cy=h/2;
+
+  // Dark fade trail — deeper at high speed
+  const trailAlpha = 0.15 + progress*0.5;
+  wctx.fillStyle = `rgba(2,3,10,${trailAlpha})`;
+  wctx.fillRect(0,0,w,h);
+
+  // Draw tunnel rings first (background depth)
+  tunnelRings.forEach(r=>{ r.update(progress,dt); r.draw(wctx,cx,cy,progress); });
+
+  // Draw streaking stars
+  warpStars.forEach(s=>{ s.update(progress,dt); s.draw(wctx,cx,cy,progress); });
+
+  // Central vortex glow
+  if(progress > 0.3){
+    const vortexAlpha = (progress-0.3)/0.7;
+    const gr = wctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)*0.3);
+    gr.addColorStop(0, `rgba(120,220,255,${vortexAlpha*0.35})`);
+    gr.addColorStop(0.4, `rgba(60,120,255,${vortexAlpha*0.15})`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    wctx.fillStyle=gr;
+    wctx.beginPath(); wctx.arc(cx,cy,Math.min(w,h)*0.3,0,Math.PI*2); wctx.fill();
+  }
+
+  // White flash at peak
+  if(progress > 0.85){
+    const flashA = (progress-0.85)/0.15;
+    const gf = wctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)*0.6);
+    gf.addColorStop(0,`rgba(200,240,255,${flashA*0.95})`);
+    gf.addColorStop(0.5,`rgba(100,180,255,${flashA*0.4})`);
+    gf.addColorStop(1,'rgba(0,0,0,0)');
+    wctx.fillStyle=gf; wctx.fillRect(0,0,w,h);
+  }
+}
+
+async function doLightspeed(onMid){
+  if(lsActive)return;
+  lsActive=true;
+  resizeWarp();
+  initWarpParticles();
+
+  wctx.clearRect(0,0,wc.width,wc.height);
+  warpEl.style.opacity='1';
+
+  const BUILD=1800, PEAK=150, FADE=550;
+  let last=null;
+
+  // Phase 1: build warp
+  await new Promise(res=>{
+    let t0=null;
+    function frame(ts){
+      if(!t0)t0=ts;
+      const dt=Math.min((ts-( last||ts))/1000,0.05); last=ts;
+      const p=Math.min(1,(ts-t0)/BUILD);
+      drawWarpFrame(p,dt);
+      if(p<1) warpRAF=requestAnimationFrame(frame);
+      else res();
+    }
+    warpRAF=requestAnimationFrame(frame);
+  });
+
+  // Peak flash hold
+  drawWarpFrame(1, 0.016);
+  await new Promise(r=>setTimeout(r,PEAK));
+
+  // Callback — teleport happens here
+  onMid && onMid();
+
+  // Phase 2: fade out
+  await new Promise(res=>{
+    let st=null;
+    function frame2(ts){
+      if(!st)st=ts;
+      const p=Math.min(1,(ts-st)/FADE);
+      drawWarpFrame(1-p*0.95, 0.016);
+      warpEl.style.opacity=String(1-p);
+      if(p<1) warpRAF=requestAnimationFrame(frame2);
+      else res();
+    }
+    warpRAF=requestAnimationFrame(frame2);
+  });
+
+  warpEl.style.opacity='0';
+  wctx.clearRect(0,0,wc.width,wc.height);
+  lsActive=false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE MACHINE
+// Modes: 'sphere' | 'warp' | 'approach' | 'zoom' | 'atNode'
+// ─────────────────────────────────────────────────────────────────────────────
+let MODE       = 'sphere';
+let currentNode = 0;
+let panelOpen   = false;
+
+// Approach / zoom camera state
+let approachStart = new THREE.Vector3();  // where camera is placed after warp
+let approachT     = 0;   // 0→1 over APPROACH_DUR
+let zoomT         = 0;   // 0→1 over ZOOM_DUR
+
+const APPROACH_DUR = 2.0;   // seconds planet grows from tiny to close
+const ZOOM_DUR     = 1.0;   // seconds final zoom to orbit distance
+
+// Far-approach distance (planet looks tiny, like arriving in system)
+const APPROACH_DIST = [14, 11, 9, 15, 13];
+// Close orbit distance (sitting right next to planet, can click it)
+const ORBIT_DIST    = [1.1, 0.85, 0.75, 1.25, 1.15];
+
+const PLANET_NAMES = ['Sun','Earth','Mars','Jupiter','Saturn'];
+const NODE_LABELS  = ['Sun — About','Earth — Resume','Mars — Projects','Jupiter — Skills','Saturn — Contact'];
+
+function smoothstep(a,b,t){const x=Math.max(0,Math.min(1,(t-a)/(b-a)));return x*x*(3-2*x);}
+// Ease-out cubic — fast at start, gentle landing
+function easeOut3(t){return 1-Math.pow(1-t,3);}
+
+function getMainWorldPos(idx){
+  sphereGroup.updateMatrixWorld();
+  return planetGroups[idx].getWorldPosition(new THREE.Vector3());
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPROACH CAMERA — position camera far away from the target planet
+// pointing slightly off-axis so the planet is dramatically to one side first,
+// then centres as we zoom. Offset is in local space relative to planet.
+// ─────────────────────────────────────────────────────────────────────────────
+function getApproachPos(idx){
+  const wpos = getMainWorldPos(idx);
+  // Approach from a direction slightly above and to the right
+  const dist = APPROACH_DIST[idx];
+  return wpos.clone().add(new THREE.Vector3(dist*0.25, dist*0.12, dist));
+}
+function getOrbitPos(idx){
+  const wpos = getMainWorldPos(idx);
+  return wpos.clone().add(new THREE.Vector3(0, 0, ORBIT_DIST[idx]));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRAVEL ENTRY POINT — called on first click or "next node"
+// ─────────────────────────────────────────────────────────────────────────────
+function startJourney(idx){
+  // Hide intro if still showing
+  const introEl = document.getElementById('intro');
+  introEl.style.opacity='0';
+  document.getElementById('intro-hint').style.opacity='0';
+  setTimeout(()=>{ introEl.style.display='none'; },900);
+  document.getElementById('hud').classList.add('on');
+  document.getElementById('pdots').classList.add('on');
+  document.getElementById('thud').classList.add('on');
+
+  closePanel();
+  updateDots(idx);
+  MODE = 'warp';
+  document.getElementById('tlabel').textContent = 'Warp jump to '+PLANET_NAMES[idx]+'...';
+
+  doLightspeed(()=>{
+    // Mid-warp: silently reposition camera far from the target planet
+    currentNode = idx;
+    const aPos = getApproachPos(idx);
+    camera.position.copy(aPos);
+    camera.lookAt(getMainWorldPos(idx));
+    approachT = 0;
+    zoomT     = 0;
+    MODE = 'approach';
+    document.getElementById('tlabel').textContent = 'Approaching '+PLANET_NAMES[idx]+'...';
+  });
+}
+
+function jumpTo(idx){
+  if(lsActive) return;
+  if(MODE==='sphere'||MODE==='atNode'||MODE==='approach'||MODE==='zoom'){
+    if(MODE==='atNode' && currentNode===idx){ openPanel(idx); return; }
+    startJourney(idx);
+  }
+}
+
+function nextNode(){
+  const n=(currentNode+1)%5;
+  startJourney(n);
+}
+
+function openCurrent(){ openPanel(currentNode); }
+
+function openPanel(idx){
+  document.querySelectorAll('.npanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('poverlay').classList.add('on');
+  document.getElementById('p'+idx).classList.add('on');
+  panelOpen=true;
+}
+
+function closePanel(){
+  document.querySelectorAll('.npanel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('poverlay').classList.remove('on');
+  panelOpen=false;
+}
+
+function closeAndNext(){ closePanel(); setTimeout(nextNode,300); }
+
+function exitTravel(){
+  closePanel();
+  MODE='sphere';
+  currentNode=0;
+  sphereGroup.rotation.set(0,0,0);
+  document.getElementById('thud').classList.remove('on');
+  document.getElementById('hud').classList.remove('on');
+  document.getElementById('pdots').classList.remove('on');
+  camera.position.set(0,0,7);
+  camera.lookAt(0,0,0);
+  const intro=document.getElementById('intro');
+  intro.style.display='flex'; intro.style.opacity='0';
+  setTimeout(()=>{ intro.style.opacity='1'; document.getElementById('intro-hint').style.opacity='1'; },50);
+}
+
+function updateDots(active){
+  document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('active',i===active));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLICK HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
+const raycaster=new THREE.Raycaster();
+const mouse2=new THREE.Vector2();
+const hitSphere=new THREE.Mesh(
+  new THREE.SphereGeometry(SPHERE_R+0.2,16,16),
+  new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})
+);
+sphereGroup.add(hitSphere);
+
+canvas.addEventListener('click',e=>{
+  if(panelOpen||lsActive) return;
+  if(hasDragged) return;   // was a drag, not a tap — ignore
+
+  if(MODE==='sphere'){
+    mouse2.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
+    raycaster.setFromCamera(mouse2,camera);
+    if(raycaster.intersectObject(hitSphere).length>0) startJourney(0);
+    return;
+  }
+
+  if(MODE==='atNode'){
+    // Click on the planet to open its panel
+    openPanel(currentNode);
+  }
+});
+
+// Cursor hint — show "click" pointer when at node
+canvas.addEventListener('mousemove',e=>{
+  if(MODE==='atNode' && !panelOpen){
+    cur.style.transform='translate(-50%,-50%) scale(1.6)';
+    cur.style.background='#ffffff';
+  } else if(MODE==='sphere'){
+    mouse2.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
+    raycaster.setFromCamera(mouse2,camera);
+    const hit=raycaster.intersectObject(hitSphere).length>0;
+    cur.style.transform=hit?'translate(-50%,-50%) scale(2)':'translate(-50%,-50%) scale(1)';
+    cur.style.background=hit?'#ffffff':'var(--accent)';
+  } else {
+    cur.style.transform='translate(-50%,-50%) scale(1)';
+    cur.style.background='var(--accent)';
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CURSOR
+// ─────────────────────────────────────────────────────────────────────────────
+const cur=document.getElementById('cur'), curR=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function animCur(){rx+=(mx-rx)*.1;ry+=(my-ry)*.1;curR.style.left=rx+'px';curR.style.top=ry+'px';requestAnimationFrame(animCur);})();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RESIZE
+// ─────────────────────────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  resizeWarp();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCROLL-DRIVEN SPHERE SPIN
+// ─────────────────────────────────────────────────────────────────────────────
+let scrollVelY    = 0;       // current Y rotation velocity (radians/frame)
+let scrollVelX    = 0;       // current X rotation velocity
+const scrollFriction  = 0.92;    // how fast it slows down (0=instant stop, 1=never)
+const scrollMaxSpeed  = 0.06;    // max rotation speed cap
+const scrollSensitivity = 0.00012; // how much each scroll pixel adds to velocity
+
+window.addEventListener('wheel', e=>{
+  if(MODE !== 'sphere') return;       // only active on the intro sphere
+  e.preventDefault();
+
+  // deltaY drives Y-axis spin (horizontal swipe feel)
+  // deltaX (trackpad) or shift+scroll drives X-axis tilt
+  const dy = e.deltaY * scrollSensitivity;
+  const dx = (e.deltaX || (e.shiftKey ? e.deltaY*0.4 : 0)) * scrollSensitivity;
+
+  scrollVelY += dy;
+  scrollVelX += dx * 0.5;
+
+  // Haptic-feel: brief extra kick for fast scrolls
+  if(Math.abs(e.deltaY) > 80){
+    scrollVelY += Math.sign(e.deltaY) * 0.004;
+  }
+}, { passive: false });
+
+// Touch support — drag to spin on mobile
+let lastTouchX = 0, lastTouchY = 0;
+window.addEventListener('touchstart', e=>{
+  if(MODE!=='sphere') return;
+  lastTouchX = e.touches[0].clientX;
+  lastTouchY = e.touches[0].clientY;
+}, {passive:true});
+window.addEventListener('touchmove', e=>{
+  if(MODE!=='sphere') return;
+  const dx = e.touches[0].clientX - lastTouchX;
+  const dy = e.touches[0].clientY - lastTouchY;
+  scrollVelY += dx * 0.0006;
+  scrollVelX += dy * 0.0004;
+  lastTouchX = e.touches[0].clientX;
+  lastTouchY = e.touches[0].clientY;
+}, {passive:true});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT-CLICK DRAG ROTATION
+// ─────────────────────────────────────────────────────────────────────────────
+let isDragging      = false;
+let dragLastX       = 0;
+let dragLastY       = 0;
+let dragStartX      = 0;
+let dragStartY      = 0;
+let hasDragged      = false;   // true once drag moved >5px — suppresses click
+const dragSensitivity = 0.007;
+
+window.addEventListener('mousedown', e=>{
+  if(e.button !== 0 || MODE !== 'sphere') return;
+  isDragging = true;
+  dragLastX  = e.clientX;
+  dragLastY  = e.clientY;
+  dragStartX = e.clientX;   // track start pos to detect real drag vs tap
+  dragStartY = e.clientY;
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e=>{
+  if(!isDragging || MODE !== 'sphere') return;
+  const dx = e.clientX - dragLastX;
+  const dy = e.clientY - dragLastY;
+  // Mark as a real drag once cursor moves more than 5px from start
+  if(!hasDragged){
+    const totalDx = e.clientX - dragStartX;
+    const totalDy = e.clientY - dragStartY;
+    if(Math.sqrt(totalDx*totalDx+totalDy*totalDy) > 5) hasDragged = true;
+  }
+  scrollVelY += dx * dragSensitivity;
+  scrollVelX += dy * dragSensitivity * 0.5;
+  dragLastX = e.clientX;
+  dragLastY = e.clientY;
+});
+
+window.addEventListener('mouseup', e=>{
+  if(e.button === 0){ isDragging = false; setTimeout(()=>{ hasDragged=false; },10); }
+});
+
+const clock=new THREE.Clock();
+let pulseT=0;
+
+// HUD hint shown at node
+const nodeHint = document.getElementById('thud');
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(), 0.05);
+  pulseT+=dt;
+
+  // Sphere global rotation — slows when inside
+  // Sphere rotation — scroll-driven velocity with momentum & friction
+  if(MODE==='sphere'){
+    // Apply friction each frame
+    scrollVelY *= scrollFriction;
+    scrollVelX *= scrollFriction;
+    // Clamp to max speed so it doesn't go insane
+    scrollVelY = Math.max(-scrollMaxSpeed, Math.min(scrollMaxSpeed, scrollVelY));
+    scrollVelX = Math.max(-scrollMaxSpeed*0.5, Math.min(scrollMaxSpeed*0.5, scrollVelX));
+    // When velocity is near zero, fall back to idle drift
+    const baseY = 0.0018, baseX = 0.0006;
+    const velMagY = Math.abs(scrollVelY), velMagX = Math.abs(scrollVelX);
+    const blendY = Math.max(0, 1 - velMagY/0.002);  // 1=idle, 0=full scroll
+    const blendX = Math.max(0, 1 - velMagX/0.002);
+    sphereGroup.rotation.y += scrollVelY + baseY*blendY;
+    sphereGroup.rotation.x += scrollVelX + baseX*blendX;
+  } else {
+    // Outside sphere mode — slow idle only, no scroll effect
+    sphereGroup.rotation.y += 0.0003;
+    sphereGroup.rotation.x += 0.0001;
+  }
+
+  // Planet self-rotation — always on, all 3 axes, independent of mode
+  PLANET_CFG.forEach((cfg,i)=>{
+    planetMeshes[i].rotation.y += cfg.rotY * dt * 60 * 0.016;
+    planetMeshes[i].rotation.x += cfg.rotX * dt * 60 * 0.016;
+    planetMeshes[i].rotation.z += cfg.rotZ * dt * 60 * 0.016;
+  });
+
+  // Planet glow ring pulse
+  planetGroups.forEach((g,i)=>{
+    const ring=g.children[g.children.length-1];
+    if(ring && ring.isMesh){ ring.scale.setScalar(1+0.1*Math.sin(pulseT*1.5+i*1.2)); }
+  });
+
+  // ── COMET UPDATE ──
+  if(!cometActive){
+    cometTimer += dt;
+    if(cometTimer >= COMET_INTERVAL){ cometTimer = 0; launchComet(); }
+  } else {
+    cometT += dt * COMET_SPEED;
+    if(cometT > 1){
+      cometActive = false;
+      cometGroup.visible = false;
+      cometTimer = 0;
+    } else {
+      cometGroup.position.copy(cometPath.getPoint(cometT));
+      // Subtle glow pulse
+      cometGlow.material.opacity = 0.65 + Math.sin(pulseT * 9) * 0.1;
+    }
+  }
+
+  // ── APPROACH PHASE ── planet grows from afar over APPROACH_DUR seconds
+  if(MODE==='approach'){
+    approachT = Math.min(1, approachT + dt/APPROACH_DUR);
+    const t = easeOut3(approachT);
+    const aPos = getApproachPos(currentNode);
+    // Midpoint is still fairly distant — halfway point sits at ~3x orbit dist
+    const midPos = getMainWorldPos(currentNode).clone().add(new THREE.Vector3(0, 0, ORBIT_DIST[currentNode]*3.5));
+    // Lerp approach → mid during first half of t
+    const camPos = new THREE.Vector3().lerpVectors(aPos, midPos, t);
+    camera.position.copy(camPos);
+    camera.lookAt(getMainWorldPos(currentNode));
+
+    if(approachT >= 1){
+      MODE = 'zoom';
+      zoomT = 0;
+      document.getElementById('tlabel').textContent = 'Entering orbit...';
+    }
+  }
+
+  // ── ZOOM PHASE ── slow final drift to orbit position over ZOOM_DUR seconds
+  if(MODE==='zoom'){
+    zoomT = Math.min(1, zoomT + dt/ZOOM_DUR);
+    const t = easeOut3(zoomT);
+    const midPos = getMainWorldPos(currentNode).clone().add(new THREE.Vector3(0, 0, ORBIT_DIST[currentNode]*3.5));
+    const orbitPos = getOrbitPos(currentNode);
+    camera.position.lerpVectors(midPos, orbitPos, t);
+    camera.lookAt(getMainWorldPos(currentNode));
+
+    if(zoomT >= 1){
+      MODE = 'atNode';
+      document.getElementById('tlabel').textContent = NODE_LABELS[currentNode];
+      // Show "click planet" hint on the HUD open button
+      document.getElementById('openbtn').textContent = 'Click planet or here ↗';
+    }
+  }
+
+  // ── AT NODE — gentle drift + planet always centred ──
+  if(MODE==='atNode' && !panelOpen){
+    const wpos = getMainWorldPos(currentNode);
+    const drift = new THREE.Vector3(
+      Math.sin(pulseT*0.32)*0.06,
+      Math.cos(pulseT*0.25)*0.04,
+      Math.sin(pulseT*0.18)*0.03
+    );
+    const target = getOrbitPos(currentNode).add(drift);
+    camera.position.lerp(target, 0.018);
+    camera.lookAt(wpos);
+  }
+
+  renderer.render(scene,camera);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AMBIENT SPACE MUSIC — Web Audio API, no external files needed
+// Generates a deep cinematic drone: layered sine pads + slow filter sweep
+// + occasional high shimmer notes, all procedurally
+// ─────────────────────────────────────────────────────────────────────────────
+let audioCtx = null;
+let masterGain = null;
+let audioStarted = false;
+
+function buildAmbientMusic(ctx){
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0, ctx.currentTime);
+  master.gain.linearRampToValueAtTime(0.38, ctx.currentTime + 4); // slow fade in
+  master.connect(ctx.destination);
+
+  // ── Reverb convolver (fake impulse response) ──
+  function makeReverb(dur=3.5, decay=2.2){
+    const rate = ctx.sampleRate;
+    const len  = rate * dur;
+    const buf  = ctx.createBuffer(2, len, rate);
+    for(let c=0;c<2;c++){
+      const d=buf.getChannelData(c);
+      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);
+    }
+    const conv=ctx.createConvolver(); conv.buffer=buf; return conv;
+  }
+  const reverb = makeReverb(4.5, 2.8);
+  const reverbGain = ctx.createGain(); reverbGain.gain.value = 0.55;
+  reverb.connect(reverbGain); reverbGain.connect(master);
+
+  // ── Low-pass filter that slowly sweeps for movement ──
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 600;
+  filter.Q.value = 0.8;
+  filter.connect(master);
+  filter.connect(reverb);
+
+  // Automate filter sweep — very slow, 40s cycle
+  function sweepFilter(){
+    const now = ctx.currentTime;
+    filter.frequency.cancelScheduledValues(now);
+    filter.frequency.setValueAtTime(filter.frequency.value, now);
+    filter.frequency.linearRampToValueAtTime(1800, now + 20);
+    filter.frequency.linearRampToValueAtTime(400,  now + 40);
+    setTimeout(sweepFilter, 40000);
+  }
+  sweepFilter();
+
+  // ── Drone layer builder ──
+  // Creates a detuned oscillator pair (slight chorus) feeding into filter
+  function makeDrone(freq, gainVal, type='sine', detune=3){
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const g    = ctx.createGain();
+    osc1.type = osc2.type = type;
+    osc1.frequency.value = freq;
+    osc2.frequency.value = freq;
+    osc1.detune.value =  detune;
+    osc2.detune.value = -detune;
+    g.gain.value = gainVal;
+    osc1.connect(g); osc2.connect(g);
+    g.connect(filter);
+    osc1.start(); osc2.start();
+    return { osc1, osc2, g };
+  }
+
+  // ── Root drone chord — open fifth (Dm feel) ──
+  makeDrone(55.0,  0.18, 'sine',   2);   // D1  — sub bass
+  makeDrone(110.0, 0.14, 'sine',   3);   // D2  — bass fundamental
+  makeDrone(164.8, 0.10, 'sine',   4);   // E3  — third partial
+  makeDrone(220.0, 0.08, 'sine',   5);   // A3  — fifth
+  makeDrone(293.7, 0.06, 'sine',   6);   // D4  — octave
+  makeDrone(440.0, 0.04, 'sine',   8);   // A4  — upper fifth shimmer
+
+  // ── Slow pad — triangle wave, breathes with LFO ──
+  function makePad(freq, baseGain){
+    const osc = ctx.createOscillator();
+    const lfo = ctx.createOscillator();
+    const lfoGain = ctx.createGain();
+    const g   = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    osc.detune.value = (Math.random()-0.5)*12;
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.08 + Math.random()*0.06;  // very slow breath 0.08–0.14 Hz
+    lfoGain.gain.value = baseGain * 0.6;
+    g.gain.value = baseGain * 0.4;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain);
+    osc.connect(g); g.connect(filter);
+    osc.start(); lfo.start();
+  }
+  makePad(73.4,  0.09);   // D2
+  makePad(110.0, 0.07);
+  makePad(146.8, 0.06);   // D3
+  makePad(220.0, 0.05);
+
+  // ── High shimmer — random bell-like notes every 6–14s ──
+  const shimmerNotes = [
+    523.2, 587.3, 659.3, 783.9, 880.0,   // C5 D5 E5 G5 A5
+    1046.5, 1174.7, 1318.5               // C6 D6 E6
+  ];
+  function playShimmer(){
+    const freq = shimmerNotes[Math.floor(Math.random()*shimmerNotes.length)];
+    const osc  = ctx.createOscillator();
+    const env  = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.detune.value = (Math.random()-0.5)*8;
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.055, ctx.currentTime + 0.08);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.5);
+    osc.connect(env); env.connect(reverb); env.connect(master);
+    osc.start(); osc.stop(ctx.currentTime + 3.6);
+    const next = 6000 + Math.random()*8000;
+    setTimeout(playShimmer, next);
+  }
+  setTimeout(playShimmer, 3000);  // first shimmer after 3s
+
+  // ── Sub pulse — very slow, deep thump every ~8s ──
+  function subPulse(){
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 36 + Math.random()*8;
+    env.gain.setValueAtTime(0, ctx.currentTime);
+    env.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.15);
+    env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.8);
+    osc.connect(env); env.connect(master);
+    osc.start(); osc.stop(ctx.currentTime + 3);
+    setTimeout(subPulse, 7000 + Math.random()*4000);
+  }
+  setTimeout(subPulse, 5000);
+
+  return master;
+}
+
+function startAudio(){
+  if(audioStarted) return;
+  audioStarted = true;
+  try {
+    audioCtx  = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = buildAmbientMusic(audioCtx);
+  } catch(e){ console.warn('Web Audio not supported', e); }
+}
+
+// Auto-start on first user interaction (browser autoplay policy requires gesture)
+function tryStartAudio(){
+  startAudio();
+  // Resume if context was suspended
+  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+animate();
+
+
+</script>
+</body>
+</html>
