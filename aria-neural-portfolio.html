@@ -138,7 +138,54 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .clink:hover{border-color:rgba(93,228,199,.35);background:rgba(93,228,199,.04);color:var(--accent);}
 .clabel{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);min-width:64px;}
 
-/* ── MOBILE RESPONSIVE ────────────────────────────────────────────────── */
+/* Planet labels — floating over each planet on the sphere */
+#planet-labels{position:fixed;inset:0;pointer-events:none;z-index:10;}
+.plabel{
+  position:absolute;
+  transform:translate(-50%,-50%);
+  pointer-events:all;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  cursor:none;
+  transition:opacity .3s;
+}
+.plabel-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent);
+}
+.plabel-text{
+  font-family:'DM Mono',monospace;
+  font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:rgba(232,234,240,.7);
+  white-space:nowrap;
+  text-shadow:0 0 12px rgba(93,228,199,.5);
+  background:rgba(2,3,10,.35);
+  padding:2px 7px;
+  border:1px solid rgba(93,228,199,.15);
+  transition:color .2s,border-color .2s,background .2s;
+}
+.plabel:hover .plabel-text{
+  color:var(--accent);
+  border-color:rgba(93,228,199,.5);
+  background:rgba(2,3,10,.7);
+}
+.plabel-sub{
+  font-size:8px;letter-spacing:.12em;text-transform:uppercase;
+  color:rgba(107,114,128,.6);white-space:nowrap;
+}
+
+/* Zoom-out button — shows at node */
+#zoom-out-btn{
+  position:fixed;top:1.4rem;left:50%;transform:translateX(-50%);
+  z-index:40;opacity:0;pointer-events:none;transition:opacity .4s;
+  background:rgba(2,3,10,.6);border:1px solid rgba(93,228,199,.2);
+  color:var(--muted);font-family:'DM Mono',monospace;font-size:11px;
+  letter-spacing:.1em;text-transform:uppercase;padding:7px 18px;
+  cursor:none;backdrop-filter:blur(8px);display:flex;align-items:center;gap:8px;
+}
+#zoom-out-btn.on{opacity:1;pointer-events:all;}
+#zoom-out-btn:hover{border-color:rgba(93,228,199,.45);color:var(--accent);}
+@media(max-width:768px){#zoom-out-btn{font-size:10px;padding:6px 12px;}}
 @media (max-width: 768px){
   /* No custom cursor on touch */
   html,body{cursor:auto;}
@@ -244,6 +291,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   </div>
 </div>
 
+
+<!-- Planet labels on sphere (visible on intro screen) -->
+<div id="planet-labels">
+  <div class="plabel" id="pl0" onclick="startJourney(0)">
+    <div class="plabel-dot"></div>
+    <div class="plabel-text">About Me</div>
+  </div>
+  <div class="plabel" id="pl1" onclick="startJourney(1)">
+    <div class="plabel-dot"></div>
+    <div class="plabel-text">Resume</div>
+  </div>
+  <div class="plabel" id="pl2" onclick="startJourney(2)">
+    <div class="plabel-dot"></div>
+    <div class="plabel-text">Projects</div>
+  </div>
+  <div class="plabel" id="pl3" onclick="startJourney(3)">
+    <div class="plabel-dot"></div>
+    <div class="plabel-text">Skills</div>
+  </div>
+  <div class="plabel" id="pl4" onclick="startJourney(4)">
+    <div class="plabel-dot"></div>
+    <div class="plabel-text">Contact</div>
+  </div>
+</div>
+
+<!-- Zoom out button — visible at node -->
+<button id="zoom-out-btn" onclick="zoomOutToSphere()">← Sphere</button>
 
 <!-- Progress dots -->
 <div id="pdots">
@@ -929,43 +1003,36 @@ let tunnelRings = [];
 
 function initWarpParticles(){
   const w=innerWidth, h=innerHeight;
-  warpStars = Array.from({length:600},()=>new WarpStar(w,h));
-  tunnelRings = Array.from({length:30},()=>{const r=new TunnelRing(w,h); r.z=Math.random(); return r;});
+  warpStars = Array.from({length:180},()=>new WarpStar(w,h));
+  tunnelRings = []; // removed — too flashy
 }
 
 function drawWarpFrame(progress, dt){
   const w=wc.width, h=wc.height, cx=w/2, cy=h/2;
 
-  // Dark fade trail — deeper at high speed
-  const trailAlpha = 0.15 + progress*0.5;
+  // Trail — solid dark fade
+  const trailAlpha = 0.2 + progress*0.55;
   wctx.fillStyle = `rgba(2,3,10,${trailAlpha})`;
   wctx.fillRect(0,0,w,h);
 
-  // Draw tunnel rings first (background depth)
-  tunnelRings.forEach(r=>{ r.update(progress,dt); r.draw(wctx,cx,cy,progress); });
-
-  // Draw streaking stars
+  // Stars only — no tunnel rings
   warpStars.forEach(s=>{ s.update(progress,dt); s.draw(wctx,cx,cy,progress); });
 
-  // Central vortex glow
-  if(progress > 0.3){
-    const vortexAlpha = (progress-0.3)/0.7;
-    const gr = wctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)*0.3);
-    gr.addColorStop(0, `rgba(120,220,255,${vortexAlpha*0.35})`);
-    gr.addColorStop(0.4, `rgba(60,120,255,${vortexAlpha*0.15})`);
+  // Very subtle central glow — only at peak, kept dim
+  if(progress > 0.6){
+    const vortexAlpha = (progress-0.6)/0.4 * 0.12; // max 0.12 opacity
+    const gr = wctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)*0.2);
+    gr.addColorStop(0, `rgba(180,220,255,${vortexAlpha})`);
     gr.addColorStop(1, 'rgba(0,0,0,0)');
     wctx.fillStyle=gr;
-    wctx.beginPath(); wctx.arc(cx,cy,Math.min(w,h)*0.3,0,Math.PI*2); wctx.fill();
+    wctx.beginPath(); wctx.arc(cx,cy,Math.min(w,h)*0.2,0,Math.PI*2); wctx.fill();
   }
 
-  // White flash at peak
-  if(progress > 0.85){
-    const flashA = (progress-0.85)/0.15;
-    const gf = wctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(w,h)*0.6);
-    gf.addColorStop(0,`rgba(200,240,255,${flashA*0.95})`);
-    gf.addColorStop(0.5,`rgba(100,180,255,${flashA*0.4})`);
-    gf.addColorStop(1,'rgba(0,0,0,0)');
-    wctx.fillStyle=gf; wctx.fillRect(0,0,w,h);
+  // White flash — much more subtle, only last 10%
+  if(progress > 0.9){
+    const flashA = (progress-0.9)/0.1 * 0.5; // max 0.5 opacity
+    wctx.fillStyle=`rgba(220,235,255,${flashA})`;
+    wctx.fillRect(0,0,w,h);
   }
 }
 
@@ -1083,6 +1150,8 @@ function startJourney(idx){
   document.getElementById('hud').classList.add('on');
   document.getElementById('pdots').classList.add('on');
   document.getElementById('thud').classList.add('on');
+  document.getElementById('zoom-out-btn').classList.remove('on');
+  document.getElementById('planet-labels').style.pointerEvents='none';
 
   closePanel();
   updateDots(idx);
@@ -1140,11 +1209,29 @@ function exitTravel(){
   document.getElementById('thud').classList.remove('on');
   document.getElementById('hud').classList.remove('on');
   document.getElementById('pdots').classList.remove('on');
+  document.getElementById('zoom-out-btn').classList.remove('on');
+  document.getElementById('planet-labels').style.pointerEvents='all';
   camera.position.set(0,0,7);
   camera.lookAt(0,0,0);
   const intro=document.getElementById('intro');
   intro.style.display='flex'; intro.style.opacity='0';
   setTimeout(()=>{ intro.style.opacity='1'; document.getElementById('intro-hint').style.opacity='1'; },50);
+}
+
+// Zoom out from current planet back to sphere — triggered by scroll up or button
+let zoomOutT = 0;
+let isZoomingOut = false;
+let zoomOutFrom = new THREE.Vector3();
+
+function zoomOutToSphere(){
+  if(MODE !== 'atNode' && MODE !== 'approach' && MODE !== 'zoom') return;
+  closePanel();
+  isZoomingOut = true;
+  zoomOutT = 0;
+  zoomOutFrom.copy(camera.position);
+  MODE = 'zoomingOut';
+  document.getElementById('zoom-out-btn').classList.remove('on');
+  document.getElementById('thud').classList.remove('on');
 }
 
 function updateDots(active){
@@ -1164,17 +1251,26 @@ sphereGroup.add(hitSphere);
 
 canvas.addEventListener('click',e=>{
   if(panelOpen||lsActive) return;
-  if(hasDragged) return;   // was a drag, not a tap — ignore
+  if(hasDragged) return;
 
   if(MODE==='sphere'){
     mouse2.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
     raycaster.setFromCamera(mouse2,camera);
+
+    // Check planet meshes first — clicking a planet goes directly to it
+    sphereGroup.updateMatrixWorld(true);
+    const planetHits = raycaster.intersectObjects(planetMeshes, false);
+    if(planetHits.length > 0){
+      const hitIdx = planetMeshes.indexOf(planetHits[0].object);
+      if(hitIdx !== -1){ startJourney(hitIdx); return; }
+    }
+
+    // Fallback — click anywhere on the sphere enters at node 0
     if(raycaster.intersectObject(hitSphere).length>0) startJourney(0);
     return;
   }
 
   if(MODE==='atNode'){
-    // Click on the planet to open its panel
     openPanel(currentNode);
   }
 });
@@ -1182,14 +1278,22 @@ canvas.addEventListener('click',e=>{
 // Cursor hint — show "click" pointer when at node
 canvas.addEventListener('mousemove',e=>{
   if(MODE==='atNode' && !panelOpen){
-    cur.style.transform='translate(-50%,-50%) scale(1.6)';
-    cur.style.background='#ffffff';
+    if(isDragging){
+      cur.style.transform='translate(-50%,-50%) scale(1.2)';
+      cur.style.background='var(--accent2)';
+    } else {
+      cur.style.transform='translate(-50%,-50%) scale(1.6)';
+      cur.style.background='#ffffff';
+    }
   } else if(MODE==='sphere'){
     mouse2.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
     raycaster.setFromCamera(mouse2,camera);
-    const hit=raycaster.intersectObject(hitSphere).length>0;
+    sphereGroup.updateMatrixWorld(true);
+    const planetHit = raycaster.intersectObjects(planetMeshes, false).length > 0;
+    const sphereHit = raycaster.intersectObject(hitSphere).length > 0;
+    const hit = planetHit || sphereHit;
     cur.style.transform=hit?'translate(-50%,-50%) scale(2)':'translate(-50%,-50%) scale(1)';
-    cur.style.background=hit?'#ffffff':'var(--accent)';
+    cur.style.background=planetHit?'var(--accent)':hit?'#ffffff':'var(--accent)';
   } else {
     cur.style.transform='translate(-50%,-50%) scale(1)';
     cur.style.background='var(--accent)';
@@ -1223,21 +1327,19 @@ const scrollMaxSpeed  = 0.06;    // max rotation speed cap
 const scrollSensitivity = 0.00012; // how much each scroll pixel adds to velocity
 
 window.addEventListener('wheel', e=>{
-  if(MODE !== 'sphere') return;       // only active on the intro sphere
+  // Scroll up at node = zoom out to sphere
+  if(MODE === 'atNode' && e.deltaY < -30){
+    e.preventDefault();
+    zoomOutToSphere();
+    return;
+  }
+  if(MODE !== 'sphere') return;
   e.preventDefault();
-
-  // deltaY drives Y-axis spin (horizontal swipe feel)
-  // deltaX (trackpad) or shift+scroll drives X-axis tilt
   const dy = e.deltaY * scrollSensitivity;
   const dx = (e.deltaX || (e.shiftKey ? e.deltaY*0.4 : 0)) * scrollSensitivity;
-
   scrollVelY += dy;
   scrollVelX += dx * 0.5;
-
-  // Haptic-feel: brief extra kick for fast scrolls
-  if(Math.abs(e.deltaY) > 80){
-    scrollVelY += Math.sign(e.deltaY) * 0.004;
-  }
+  if(Math.abs(e.deltaY) > 80){ scrollVelY += Math.sign(e.deltaY) * 0.004; }
 }, { passive: false });
 
 // Touch support — drag to spin on mobile
@@ -1270,27 +1372,38 @@ let hasDragged      = false;   // true once drag moved >5px — suppresses click
 const dragSensitivity = 0.007;
 
 window.addEventListener('mousedown', e=>{
-  if(e.button !== 0 || MODE !== 'sphere') return;
+  if(e.button !== 0) return;
+  if(MODE !== 'sphere' && MODE !== 'atNode') return;
   isDragging = true;
   dragLastX  = e.clientX;
   dragLastY  = e.clientY;
-  dragStartX = e.clientX;   // track start pos to detect real drag vs tap
+  dragStartX = e.clientX;
   dragStartY = e.clientY;
   e.preventDefault();
 });
 
 window.addEventListener('mousemove', e=>{
-  if(!isDragging || MODE !== 'sphere') return;
+  if(!isDragging) return;
   const dx = e.clientX - dragLastX;
   const dy = e.clientY - dragLastY;
-  // Mark as a real drag once cursor moves more than 5px from start
+
   if(!hasDragged){
     const totalDx = e.clientX - dragStartX;
     const totalDy = e.clientY - dragStartY;
     if(Math.sqrt(totalDx*totalDx+totalDy*totalDy) > 5) hasDragged = true;
   }
-  scrollVelY += dx * dragSensitivity;
-  scrollVelX += dy * dragSensitivity * 0.5;
+
+  if(MODE === 'sphere'){
+    // Spin the whole neural sphere
+    scrollVelY += dx * dragSensitivity;
+    scrollVelX += dy * dragSensitivity * 0.5;
+  } else if(MODE === 'atNode' && !panelOpen){
+    // Spin the current planet mesh directly
+    const mesh = planetMeshes[currentNode];
+    mesh.rotation.y += dx * 0.012;
+    mesh.rotation.x += dy * 0.012;
+  }
+
   dragLastX = e.clientX;
   dragLastY = e.clientY;
 });
@@ -1410,6 +1523,62 @@ function animate(){
     camera.position.lerp(target, 0.018);
     camera.lookAt(wpos);
   }
+
+  // ── ZOOMING OUT — fly back to sphere view ──
+  if(MODE==='zoomingOut'){
+    zoomOutT = Math.min(1, zoomOutT + dt * 0.6);
+    const t = 1 - Math.pow(1-zoomOutT, 3); // ease-out
+    camera.position.lerpVectors(zoomOutFrom, new THREE.Vector3(0,0,7), t);
+    camera.lookAt(0,0,0);
+    if(zoomOutT >= 1){
+      MODE = 'sphere';
+      camera.position.set(0,0,7);
+      document.getElementById('hud').classList.remove('on');
+      document.getElementById('pdots').classList.remove('on');
+      document.getElementById('planet-labels').style.pointerEvents = 'all';
+      // Re-show intro text
+      const intro = document.getElementById('intro');
+      intro.style.display='flex'; intro.style.opacity='0';
+      setTimeout(()=>{ intro.style.opacity='1'; document.getElementById('intro-hint').style.opacity='1'; }, 50);
+    }
+  }
+
+  // ── PLANET LABELS — project 3D planet positions to 2D screen ──
+  // Only show when in sphere mode (intro screen)
+  const labelsVisible = (MODE === 'sphere');
+  for(let i=0;i<5;i++){
+    const labelEl = document.getElementById('pl'+i);
+    if(!labelEl) continue;
+    if(!labelsVisible){ labelEl.style.opacity='0'; labelEl.style.pointerEvents='none'; continue; }
+
+    // Get world position of planet
+    sphereGroup.updateMatrixWorld();
+    const wpos = planetGroups[i].getWorldPosition(new THREE.Vector3());
+
+    // Check if planet is facing toward camera (front hemisphere)
+    const camDir = camera.position.clone().normalize();
+    const toCamera = camera.position.clone().sub(wpos).normalize();
+    const dot = wpos.clone().normalize().dot(camDir);
+
+    // Project to screen
+    const projected = wpos.clone().project(camera);
+    const x = (projected.x * 0.5 + 0.5) * innerWidth;
+    const y = (-projected.y * 0.5 + 0.5) * innerHeight;
+
+    // Offset label slightly above planet
+    const planetScreenR = 30; // rough pixel offset above planet center
+    labelEl.style.left = x + 'px';
+    labelEl.style.top  = (y - planetScreenR - 18) + 'px';
+
+    // Fade based on whether it's on the front face of the sphere
+    const alpha = dot > -0.1 ? Math.max(0, Math.min(1, (dot + 0.1) / 0.4)) * 0.88 : 0;
+    labelEl.style.opacity = String(alpha);
+    labelEl.style.pointerEvents = alpha > 0.2 ? 'all' : 'none';
+  }
+
+  // Show/hide zoom-out button
+  const zoomBtnVisible = (MODE==='atNode') && !panelOpen;
+  document.getElementById('zoom-out-btn').classList.toggle('on', zoomBtnVisible);
 
   renderer.render(scene,camera);
 }
